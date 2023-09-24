@@ -3,4 +3,4 @@ project(lab1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(lab1 main.c)
+add_executable(lab1 main.c errors.c errors.h)
