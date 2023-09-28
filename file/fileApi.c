@@ -38,7 +38,7 @@ u_int32_t readTablesCount(const char *name) {
 }
 
 void writeTableCount(const char *name, u_int32_t tablesCount) {
-    FILE* file = fopen(name, "wb");
+    FILE* file = fopen(name, "rb+");
     if (file == NULL) printf("Error opening file\n");
     fseek(file, 0, SEEK_SET);
     fwrite(&tablesCount, sizeof (u_int32_t), 1, file);
