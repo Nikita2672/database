@@ -1,5 +1,7 @@
+#include <string.h>
 #include "tableBlocks.h"
 #include "stdio.h"
+#include "stdlib.h"
 #include "dataBlocks.h"
 
 void writeEmptyTablesBlock(const char *name) {
@@ -137,7 +139,7 @@ void writeDataBlock(uint64_t offset, const char *name, struct headerSection* hea
 }
 
 bool isFit(struct EntityRecord* entityRecord, uint8_t fieldsNumber, uint16_t space) {
-    uint16_t neededSpace = 0;
+    uint16_t neededSpace = 5;
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         neededSpace += entityRecord->fields[i].dataSize;
         if (neededSpace > space) return false;
@@ -145,27 +147,63 @@ bool isFit(struct EntityRecord* entityRecord, uint8_t fieldsNumber, uint16_t spa
     return true;
 }
 
-void insertRecord(const char* name, struct EntityRecord* entityRecord, uint8_t fieldsNumber, struct headerSection headerSection, uint64_t offset) {
+void insertRecord(const char* name, struct EntityRecord* entityRecord, uint16_t fieldsNumber, struct headerSection headerSection, uint64_t offset) {
     uint16_t space = abs(headerSection.startEmptySpaceOffset - headerSection.endEmptySpaceOffset);
+    uint16_t beforeWriteOffset = headerSection.startEmptySpaceOffset;
     if (isFit(entityRecord, fieldsNumber, space)) {
         FILE *file = fopen(name, "rb+");
         if (file == NULL) {
             printf("Error opening file\n");
             return;
         }
-        fseek(file, offset, SEEK_SET);
-
-
-        fwrite(&fieldsNumber, sizeof ());
-
-
-        fwrite(entityRecord, sizeof (struct EntityRecord), 1, file);
-
-
-
-
-
+        fseek(file, offset + sizeof (struct headerSection), SEEK_SET);
+        for (uint16_t i = 0; i < fieldsNumber; i++) {
+            struct FieldValue *field = &entityRecord->fields[i];
+            headerSection.startEmptySpaceOffset += fwrite(&field->type, sizeof (enum DataType), 1, file);
+            uint64_t fieldNameLength = strlen(field->fieldName) + 1;
+            headerSection.startEmptySpaceOffset += fwrite(&fieldNameLength, sizeof(uint64_t), 1, file);
+            headerSection.startEmptySpaceOffset += fwrite(field->fieldName, sizeof (char), fieldNameLength, file);
+            headerSection.startEmptySpaceOffset += fwrite(&field->dataSize, sizeof (uint64_t), 1, file);
+            headerSection.startEmptySpaceOffset += fwrite(field->data, 1, field->dataSize, file);
+        }
+        uint16_t length = abs(beforeWriteOffset - headerSection.startEmptySpaceOffset);
+        uint16_t offsetRecord = beforeWriteOffset;
+        struct recordId recordId;
+        recordId.offset = offsetRecord;
+        recordId.length = length;
+        fseek(file, offset + sizeof(struct headerSection) + headerSection.endEmptySpaceOffset - sizeof (struct recordId), SEEK_SET);
+        fwrite(&recordId, sizeof (struct recordId), 1, file);
+        headerSection.endEmptySpaceOffset -= sizeof (struct recordId);
         fclose(file);
     }
 }
 
+struct EntityRecord* readRecord(const char* name, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
+    FILE *file = fopen(name, "rb+");
+    if (file == NULL) {
+        printf("Error opening file\n");
+        return NULL;
+    }
+    struct headerSection* headerSection = malloc(sizeof (struct headerSection));
+    fseek(file, offset, SEEK_SET);
+    fread(headerSection, sizeof (struct headerSection), 1, file);
+    fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE - (sizeof (struct recordId) * idPosition), SEEK_SET);
+    struct recordId* recordId = malloc(sizeof (struct recordId));
+    fread(recordId, sizeof (struct recordId), 1, file);
+    fseek(file, offset + sizeof (struct headerSection) + recordId->offset, SEEK_SET);
+    struct EntityRecord *entityRecord = malloc(sizeof (struct EntityRecord));
+    for (uint16_t i = 0; i < fieldsNumber; i++) {
+        struct FieldValue *field = malloc(sizeof (struct FieldValue));
+        fread(&field->type, sizeof (enum DataType), 1, file);
+        uint64_t fieldNameLength;
+        fread(&fieldNameLength, sizeof (uint64_t), 1, file);
+        fread(&field->fieldName, fieldNameLength, 1, file);
+        fread(&field->dataSize, sizeof (uint64_t), 1, file);
+        fread(&field->data, field->dataSize, 1, file);
+        entityRecord->fields[i] = *field;
+    }
+    free(headerSection);
+    free(recordId);
+    fclose(file);
+    return entityRecord;
+}
