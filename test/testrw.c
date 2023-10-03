@@ -1,18 +1,17 @@
 #include "../file/fileApi.h"
 #include "stdio.h"
-#include "../file/blocks.h"
-
+#include "../file/tableBlocks.h"
+#include "tests.h"
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 
 int main() {
-    writeEmptyTablesBlock(FILE_NAME);
-    printf("written emptySpaceOffset: %lu\n", readEmptySpaceOffset(FILE_NAME));
-    printf("sizeof defineTablesBlock: %lu\n", sizeof (struct defineTablesBlock));
-    printf("written table count: %u\n", readTablesCount(FILE_NAME));
-    writeTableCount(FILE_NAME, 3);
-    printf("written emptySpaceOffset: %lu\n", readEmptySpaceOffset(FILE_NAME));
-    printf("written table count: %u\n", readTablesCount(FILE_NAME));
+    test1();
+    test2();
+
+//    struct tableOffsetBlock* tableOffsetBlock = readTableOffsetBlock(FILE_NAME, 0);
+//    if(true == tableOffsetBlock->isActive) printf("%s", "hello");
+//    if(false == tableOffsetBlock->isActive) printf("%s", "hello1");
     return 0;
 }
 
