@@ -5,6 +5,8 @@
 #include "dataBlocks.h"
 #include "allocator.h"
 #include "../query/query.h"
+#include "fileApi.h"
+#include "iterator.h"
 
 void writeEmptyTablesBlock(const char *name) {
     FILE *file = fopen(name, "wb");
@@ -94,8 +96,8 @@ struct tableOffsetBlock *readTableOffsetBlock(const char *name, uint16_t tablePo
         return NULL;
     }
     struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
-    fseek(file, (sizeof(uint32_t) + (sizeof (struct tableOffsetBlock) * tablePosition)), SEEK_SET);
-    fread(tableOffsetBlock, sizeof(struct tableOffsetBlock),1, file);
+    fseek(file, (sizeof(uint32_t) + (sizeof(struct tableOffsetBlock) * tablePosition)), SEEK_SET);
+    fread(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
     fclose(file);
     return tableOffsetBlock;
 }
@@ -127,7 +129,8 @@ void writeTableOffsetBlock(const char *name, struct tableOffsetBlock *tableOffse
     fclose(file);
 }
 
-void writeDataBlock(uint64_t offset, const char *name, struct headerSection* headerSection, struct specialDataSection* specialDataSection) {
+void writeDataBlock(uint64_t offset, const char *name, struct headerSection *headerSection,
+                    struct specialDataSection *specialDataSection) {
     FILE *file = fopen(name, "rb+");
     if (file == NULL) {
         printf("Error opening file\n");
@@ -140,27 +143,32 @@ void writeDataBlock(uint64_t offset, const char *name, struct headerSection* hea
     fclose(file);
 }
 
-uint64_t countNeededSpace(struct EntityRecord* entityRecord, uint8_t fieldsNumber) {
-    uint16_t neededSpace = sizeof (struct recordId);
+uint64_t countNeededSpace(struct EntityRecord *entityRecord, uint8_t fieldsNumber) {
+    uint16_t neededSpace = sizeof(struct recordId);
     for (uint16_t i = 0; i < fieldsNumber; i++) {
-        neededSpace += sizeof (enum DataType);
-        neededSpace += sizeof (uint64_t);
-        neededSpace += (strlen(entityRecord->fields[i].fieldName) + 1) * sizeof (char );
-        neededSpace += sizeof (uint64_t);
+        neededSpace += sizeof(enum DataType);
+        neededSpace += sizeof(uint64_t);
+        neededSpace += (strlen(entityRecord->fields[i].fieldName) + 1) * sizeof(char);
+        neededSpace += sizeof(uint64_t);
         neededSpace += entityRecord->fields[i].dataSize;
     }
     return neededSpace;
 }
 
-void insertRecord(const char* name, struct EntityRecord* entityRecord, uint16_t fieldsNumber, struct headerSection headerSection, uint64_t offset) {
-    uint16_t space = abs(headerSection.startEmptySpaceOffset - headerSection.endEmptySpaceOffset);
-    uint16_t beforeWriteOffset = headerSection.startEmptySpaceOffset;
-    uint64_t neededSpace = countNeededSpace(entityRecord, fieldsNumber);
-    FILE *file = fopen(name, "rb+");
+void insertRecord(const char *fileName, struct EntityRecord *entityRecord, struct tableOffsetBlock *tableOffsetBlock) {
+    FILE *file = fopen(fileName, "rb+");
     if (file == NULL) {
         printf("Error opening file\n");
         return;
     }
+    struct headerSection headerSection;
+    fseek(file, tableOffsetBlock->lastTableBLockOffset, SEEK_SET);
+    fread(&headerSection, sizeof(struct headerSection), 1, file);
+    uint16_t fieldsNumber = tableOffsetBlock->fieldsNumber;
+    uint64_t offset = tableOffsetBlock->lastTableBLockOffset;
+    uint16_t space = abs(headerSection.startEmptySpaceOffset - headerSection.endEmptySpaceOffset);
+    uint16_t beforeWriteOffset = headerSection.startEmptySpaceOffset;
+    uint64_t neededSpace = countNeededSpace(entityRecord, fieldsNumber);
     if (neededSpace <= space) {
         fseek(file, offset + sizeof(struct headerSection) + headerSection.startEmptySpaceOffset, SEEK_SET);
         for (uint16_t i = 0; i < fieldsNumber; i++) {
@@ -195,44 +203,45 @@ void insertRecord(const char* name, struct EntityRecord* entityRecord, uint16_t 
             printf("Your data too big");
             return;
         }
-        fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+        fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
         struct specialDataSection specialDataSection;
         fread(&specialDataSection, sizeof(struct specialDataSection), 1, file);
         uint64_t newBlockOffset = allocateBlock(file, offset, headerSection.pageNumber + 1);
         specialDataSection.nextBlockOffset = newBlockOffset;
-        fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
-        fwrite(&specialDataSection, sizeof (struct specialDataSection), 1, file);
+        fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+        fwrite(&specialDataSection, sizeof(struct specialDataSection), 1, file);
         fclose(file);
-        insertRecord(name, entityRecord, fieldsNumber, headerSection, newBlockOffset);
+        insertRecord(fileName, entityRecord, tableOffsetBlock);
         return;
     }
 }
 
-struct EntityRecord* readRecord(const char* name, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
+struct EntityRecord *readRecord(const char *name, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
     FILE *file = fopen(name, "rb+");
     if (file == NULL) {
         printf("Error opening file\n");
         return NULL;
     }
     idPosition++;
-    struct headerSection* headerSection = malloc(sizeof (struct headerSection));
+    struct headerSection *headerSection = malloc(sizeof(struct headerSection));
     fseek(file, offset, SEEK_SET);
-    fread(headerSection, sizeof (struct headerSection), 1, file);
-    uint64_t recordIdOffset = offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE - (sizeof (struct recordId) * idPosition);
+    fread(headerSection, sizeof(struct headerSection), 1, file);
+    uint64_t recordIdOffset =
+            offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE - (sizeof(struct recordId) * idPosition);
     fseek(file, recordIdOffset, SEEK_SET);
-    struct recordId* recordId = malloc(sizeof (struct recordId));
-    fread(recordId, sizeof (struct recordId), 1, file);
-    fseek(file, offset + sizeof (struct headerSection) + recordId->offset, SEEK_SET);
-    struct EntityRecord *entityRecord = malloc(sizeof (struct EntityRecord));
-    struct FieldValue* fields = malloc(sizeof (struct FieldValue) * fieldsNumber);
+    struct recordId *recordId = malloc(sizeof(struct recordId));
+    fread(recordId, sizeof(struct recordId), 1, file);
+    fseek(file, offset + sizeof(struct headerSection) + recordId->offset, SEEK_SET);
+    struct EntityRecord *entityRecord = malloc(sizeof(struct EntityRecord));
+    struct FieldValue *fields = malloc(sizeof(struct FieldValue) * fieldsNumber);
     for (uint16_t i = 0; i < fieldsNumber; i++) {
-        struct FieldValue *field = malloc(sizeof (struct FieldValue));
-        fread(&field->type, sizeof (enum DataType), 1, file);
+        struct FieldValue *field = malloc(sizeof(struct FieldValue));
+        fread(&field->type, sizeof(enum DataType), 1, file);
         uint64_t fieldNameLength;
-        fread(&fieldNameLength, sizeof (uint64_t), 1, file);
+        fread(&fieldNameLength, sizeof(uint64_t), 1, file);
         field->fieldName = malloc(fieldNameLength);
-        fread(field->fieldName, sizeof (char ), fieldNameLength, file);
-        fread(&field->dataSize, sizeof (uint64_t), 1, file);
+        fread(field->fieldName, sizeof(char), fieldNameLength, file);
+        fread(&field->dataSize, sizeof(uint64_t), 1, file);
         field->data = malloc(field->dataSize);
         fread(field->data, field->dataSize, 1, file);
         fields[i] = *field;
@@ -244,7 +253,8 @@ struct EntityRecord* readRecord(const char* name, uint16_t idPosition, uint64_t 
     return entityRecord;
 }
 
-void deleteRecord(const char* fileName, uint32_t position, uint64_t offset) {
+// rewrite
+void deleteRecord(const char *fileName, uint32_t position, uint64_t offset) {
     FILE *file = fopen(fileName, "rb+");
     if (file == NULL) {
         printf("Error opening file\n");
@@ -252,38 +262,79 @@ void deleteRecord(const char* fileName, uint32_t position, uint64_t offset) {
     }
     fseek(file, offset, SEEK_SET);
     struct headerSection headerSection;
-    fread(&headerSection, sizeof (struct headerSection), 1, file);
+    fread(&headerSection, sizeof(struct headerSection), 1, file);
     if (headerSection.recordsNumber < position) return;
     position++;
-    fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE - sizeof (struct recordId) * position, SEEK_SET);
+    fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE - sizeof(struct recordId) * position, SEEK_SET);
     struct recordId recordId = {0, 0};
-    fwrite(&recordId, sizeof (struct recordId), 1, file);
+    fwrite(&recordId, sizeof(struct recordId), 1, file);
 }
 
-void insertRecordIntoTable(const char* fileName, struct EntityRecord* entityRecord, const char * tableName) {
+struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName) {
+    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(tableOffsetBlock));
+    for (uint16_t i = 0; i < MAX_TABLES; i++) {
+        fread(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
+        if (tableOffsetBlock->tableName == tableName) {
+            return tableOffsetBlock;
+        }
+    }
+    free(tableOffsetBlock);
+    return NULL;
+}
+
+void insertRecordIntoTable(const char *fileName, struct EntityRecord *entityRecord, const char *tableName) {
     FILE *file = fopen(fileName, "rb+");
     if (file == NULL) {
         printf("Error openinкак проверить разрядность системы на линуксg file\n");
         return;
     }
-    fseek(file, sizeof (uint32_t), SEEK_SET);
-    struct tableOffsetBlock tableOffsetBlock;
-    for (uint16_t i = 0; i < MAX_TABLES; i++) {
-        fread(&tableOffsetBlock, sizeof (struct tableOffsetBlock), 1, file);
-        if (tableOffsetBlock.tableName == tableName) {
-            struct headerSection headerSection;
-            fseek(file, tableOffsetBlock.firsTableBlockOffset, SEEK_CUR);
-            fread(&headerSection, sizeof (struct headerSection), 1, file);
-            fclose(file);
-            return insertRecord(fileName, entityRecord, tableOffsetBlock.fieldsNumber, headerSection, tableOffsetBlock.firsTableBlockOffset);
-        }
+    fseek(file, sizeof(uint32_t), SEEK_SET);
+    struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
+    if (tableOffsetBlock == NULL) {
+        fclose(file);
+        printf("There is no %s table", tableName);
+        free(tableOffsetBlock);
+        return;
+    } else {
+        struct headerSection headerSection;
+        fseek(file, tableOffsetBlock->firsTableBlockOffset, SEEK_CUR);
+        fread(&headerSection, sizeof(struct headerSection), 1, file);
+        fclose(file);
+        insertRecord(fileName, entityRecord, tableOffsetBlock);
+        free(tableOffsetBlock);
+        return;
     }
-    fclose(file);
-    printf("There is no %s table", tableName);
 }
 
-struct EntityRecord* readEntityRecordWithCondition(const char* fileName, const char* tableName, struct predicate* predicate,
-        uint8_t predicateNumber) {
-
-
+void readEntityRecordWithCondition(const char *fileName, const char *tableName, struct predicate *predicate,
+                              uint8_t predicateNumber) {
+    FILE *file = fopen(fileName, "rb+");
+    if (file == NULL) {
+        printf("Error opening file\n");
+        return;
+    }
+    struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
+    if (tableOffsetBlock == NULL) {
+        printf("there is no %s table", tableName);
+        return;
+    }
+    uint64_t offset = tableOffsetBlock->firsTableBlockOffset;
+    while (offset != 0) {
+        uint16_t counter = 0;
+        fseek(file, offset, SEEK_SET);
+        struct headerSection headerSection;
+        fread(&headerSection, sizeof(struct headerSection), 1, file);
+        while (counter <= headerSection.recordsNumber) {
+            counter++;
+            struct EntityRecord* entityRecord = readRecord(fileName, counter, offset, tableOffsetBlock->fieldsNumber);
+            for (uint8_t i = 0; i < predicateNumber; i++) {
+                bool result = checkPredicate(predicate[i], entityRecord, tableOffsetBlock->fieldsNumber);
+                if (result) printf("%s");
+            }
+        }
+        fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+        struct specialDataSection specialDataSection;
+        fread(&specialDataSection, sizeof(struct specialDataSection), 1, file);
+        offset = specialDataSection.nextBlockOffset;
+    }
 }

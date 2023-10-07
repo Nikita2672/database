@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "data.h"
 #include "../errors.h"
 
@@ -7,8 +8,8 @@
 #define DEFAULT_CAPACITY 200
 
 
-struct FieldValue* initFieldValue(enum DataType dataType, void* dataP, char *fieldName) {
-    struct FieldValue* pFieldValue = malloc(sizeof (struct FieldValue));
+struct FieldValue *initFieldValue(enum DataType dataType, void *dataP, char *fieldName) {
+    struct FieldValue *pFieldValue = malloc(sizeof(struct FieldValue));
     if (pFieldValue == NULL) errorAllocation("pFieldValue");
     pFieldValue->data = dataP;
     pFieldValue->type = dataType;
@@ -17,7 +18,7 @@ struct FieldValue* initFieldValue(enum DataType dataType, void* dataP, char *fie
     return pFieldValue;
 }
 
-void freeFieldValue(struct FieldValue* fieldValue) {
+void freeFieldValue(struct FieldValue *fieldValue) {
     if (fieldValue != NULL) {
         if (fieldValue->fieldName != NULL) free(fieldValue->fieldName);
         if (fieldValue->data != NULL) free(fieldValue->data);
@@ -25,15 +26,15 @@ void freeFieldValue(struct FieldValue* fieldValue) {
     }
 }
 
-struct EntityRecord* initEntityRecord(struct Table* table) {
-    struct EntityRecord* pEntityRecord = malloc(sizeof (struct EntityRecord));
+struct EntityRecord *initEntityRecord(struct Table *table) {
+    struct EntityRecord *pEntityRecord = malloc(sizeof(struct EntityRecord));
     if (pEntityRecord == NULL) errorAllocation("pEntityRecord");
-    pEntityRecord->fields = malloc(table->fieldsNumber * sizeof (struct FieldValue));
+    pEntityRecord->fields = malloc(table->fieldsNumber * sizeof(struct FieldValue));
     if (pEntityRecord->fields == NULL) errorAllocation("pEntityRecord->fields while init");
     return pEntityRecord;
 }
 
-void freeEntityRecord(struct EntityRecord* entityRecord, uint32_t fieldsNumber) {
+void freeEntityRecord(struct EntityRecord *entityRecord, uint32_t fieldsNumber) {
     if (entityRecord != NULL) {
         if (entityRecord->fields != NULL) {
             for (uint32_t i = 0; i < fieldsNumber; i++) {
@@ -45,14 +46,14 @@ void freeEntityRecord(struct EntityRecord* entityRecord, uint32_t fieldsNumber) 
     }
 }
 
-struct NameType* initNameType(const char *fieldName, enum DataType dataType) {
-    struct NameType* nameType = malloc(sizeof (struct NameType));
+struct NameType *initNameType(const char *fieldName, enum DataType dataType) {
+    struct NameType *nameType = malloc(sizeof(struct NameType));
     nameType->dataType = dataType;
     nameType->fieldName = fieldName;
     return nameType;
 }
 
-void freeNameType(struct NameType* nameType) {
+void freeNameType(struct NameType *nameType) {
     if (nameType != NULL) {
         if (nameType->fieldName != NULL) {
             free(nameType->fieldName);
@@ -61,8 +62,8 @@ void freeNameType(struct NameType* nameType) {
     }
 }
 
-struct Table* initTable(uint32_t fieldsNumber, struct NameType* nameTypes) {
-    struct Table* table = malloc(sizeof (struct Table));
+struct Table *initTable(uint32_t fieldsNumber, struct NameType *nameTypes) {
+    struct Table *table = malloc(sizeof(struct Table));
     table->capacity = DEFAULT_CAPACITY;
     table->recordsNumber = 0;
     table->fieldsNumber = fieldsNumber;
@@ -70,7 +71,7 @@ struct Table* initTable(uint32_t fieldsNumber, struct NameType* nameTypes) {
     return table;
 }
 
-void freeTable(struct Table* table) {
+void freeTable(struct Table *table) {
     if (table != NULL) {
         if (table->nameTypes != NULL) {
             for (uint32_t i = 0; i < table->fieldsNumber; i++) {
@@ -89,16 +90,16 @@ void freeTable(struct Table* table) {
     }
 }
 
-struct EntityRecord* createEntityRecord(struct FieldValue* fieldValue, struct Table* table) {
-    struct EntityRecord* entityRecord = initEntityRecord(table);
+struct EntityRecord *createEntityRecord(struct FieldValue *fieldValue, struct Table *table) {
+    struct EntityRecord *entityRecord = initEntityRecord(table);
     entityRecord->fields = fieldValue;
     return entityRecord;
 }
 
-void addEntityRecordToTable(struct Table* table, struct EntityRecord* entityRecord) {
+void addEntityRecordToTable(struct Table *table, struct EntityRecord *entityRecord) {
     if (table->capacity >= table->recordsNumber) {
         uint32_t newCapacity = table->capacity * 2;
-        table->records = realloc(table->records, newCapacity * sizeof (struct EntityRecord));
+        table->records = realloc(table->records, newCapacity * sizeof(struct EntityRecord));
         if (table->records == NULL) errorAllocation("dynamic->fields while adding value");
         table->capacity = newCapacity;
     }
@@ -106,6 +107,32 @@ void addEntityRecordToTable(struct Table* table, struct EntityRecord* entityReco
     table->recordsNumber++;
 }
 
-struct FieldValue* getValueByIndex(const struct EntityRecord *entityRecord, uint32_t index) {
+struct FieldValue *getValueByIndex(const struct EntityRecord *entityRecord, uint32_t index) {
     return &(entityRecord->fields[index]);
+}
+
+
+void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber) {
+    for (uint16_t i = 0; i < fieldsNumber; i++) {
+        printf("%s: ", entityRecord->fields[i].fieldName);
+        switch (entityRecord->fields[i].type) {
+            case INT:
+                printf("%d; ", *(int32_t *) entityRecord->fields[i].data);
+                break;
+            case DOUBLE:
+                printf("%f; ", *(double *) entityRecord->fields[i].data);
+                break;
+            case BOOL:
+                if (*(bool *) entityRecord->fields[i].data) {
+                    printf("true; ");
+                } else {
+                    printf("false; ");
+                }
+                break;
+            default:
+                printf("%s; ", (char *) entityRecord->fields[i].data);
+                break;
+        }
+    }
+    printf("\n");
 }

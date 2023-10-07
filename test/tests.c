@@ -3,6 +3,7 @@
 #include "../file/tableBlocks.h"
 #include <string.h>
 #include "tests.h"
+#include "../query/query.h"
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 #define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/test/testInsert.bin"
@@ -91,6 +92,7 @@ void test2() {
 }
 
 void test3() {
+    FILE* file = fopen(FILE_NAME_1, "rb+");
     // test read write 1 record
     struct headerSection headerSection = {0, 0, BLOCK_DATA_SIZE, 0};
     double score = 1234.4;
@@ -103,7 +105,12 @@ void test3() {
     struct FieldValue fieldValue4 = {INT, "age", &age, sizeof(uint16_t)};
     struct FieldValue array[4] = {fieldValue1, fieldValue2, fieldValue3, fieldValue4};
     struct EntityRecord entityRecord = {array};
-    insertRecord(FILE_NAME_1, &entityRecord, 4, headerSection, 0);
+    struct NameTypeBlock nameTypeBlock1 = {"score", DOUBLE};
+    struct NameTypeBlock nameTypeBlock2 = {"name", STRING};
+    struct NameTypeBlock nameTypeBlock3 = {"sex", BOOL};
+    struct NameTypeBlock nameTypeBlock4 = {"age", INT};
+    struct tableOffsetBlock tableOffsetBlock = {true, "Users", {nameTypeBlock1, nameTypeBlock2, nameTypeBlock3, nameTypeBlock4}, 4, 0, 0};
+    insertRecord(FILE_NAME_1, &entityRecord, &tableOffsetBlock);
     struct EntityRecord *entityRecord1 = readRecord(FILE_NAME_1, 0, 0, 4);
     assertEqualsS(entityRecord1->fields[0].fieldName, "score", "field1", 3, 1);
     assertEquals(*(double *) entityRecord1->fields[0].data, 1234.4, "value1", 3, 2);
@@ -116,7 +123,6 @@ void test3() {
     //------------------------------------------------------------------------------------------------------------------------
     // test writing the second record and don't break anything
     struct headerSection headerSection1;
-    FILE* file = fopen(FILE_NAME_1, "rb+");
     fread(&headerSection1, sizeof (struct headerSection), 1, file);
     fclose(file);
     double score1 = 123.3;
@@ -129,7 +135,7 @@ void test3() {
     struct FieldValue fieldValue24 = {INT, "age", &age1, sizeof(uint16_t)};
     struct FieldValue array1[4] = {fieldValue21, fieldValue22, fieldValue23, fieldValue24};
     struct EntityRecord entityRecord2 = {array1};
-    insertRecord(FILE_NAME_1, &entityRecord2, 4, headerSection1, 0);
+    insertRecord(FILE_NAME_1, &entityRecord2, &tableOffsetBlock);
     struct EntityRecord *entityRecord12 = readRecord(FILE_NAME_1, 0, 0, 4);
     assertEqualsS(entityRecord12->fields[0].fieldName, "score", "field1", 3, 9);
     assertEquals(*(double *) entityRecord12->fields[0].data, 1234.4, "value1", 3, 10);
@@ -152,5 +158,51 @@ void test3() {
 
 // test checkPredicate function
 void test4() {
-
+    struct predicate predicate;
+    double score1 = 123.3;
+    char *name1 = "Ksenia Kirillova";
+    bool sex1 = false;
+    int32_t age1 = 19;
+    struct FieldValue fieldValue21 = {DOUBLE, "score", &score1, sizeof(double)};
+    struct FieldValue fieldValue22 = {STRING, "name", name1, sizeof(char) * strlen(name1)};
+    struct FieldValue fieldValue23 = {BOOL, "sex", &sex1, sizeof(bool)};
+    struct FieldValue fieldValue24 = {INT, "age", &age1, sizeof(int32_t)};
+    struct FieldValue array1[4] = {fieldValue21, fieldValue22, fieldValue23, fieldValue24};
+    struct EntityRecord entityRecord2 = {array1};
+    predicate.fieldName = "sex";
+    predicate.comparator = MORE_OR_EQUALS;
+    bool sex2 = true;
+    struct FieldValue comparableValue = {BOOL, "sex", &sex2, sizeof(bool)};
+    predicate.comparableValue = &comparableValue;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), false, "sex", 4, 1);
+    predicate.comparator = LESS_OR_EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), true, "sex", 4, 2);
+    predicate.comparator = EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), false, "sex", 4, 3);
+    predicate.fieldName = "score";
+    double score2 = 123.31;
+    struct FieldValue comparableValue1 = {DOUBLE, "score", &score2, sizeof(double)};
+    predicate.comparableValue = &comparableValue1;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), false, "score", 4, 4);
+    predicate.comparator = MORE_OR_EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), false, "score", 4, 5);
+    predicate.comparator = LESS_OR_EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), true, "score", 4, 6);
+    double score3 = 123.3;
+    predicate.comparableValue->data = &score3;
+    predicate.comparator = EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), true, "score", 4, 7);
+    predicate.comparator = LESS_OR_EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), true, "score", 4, 8);
+    predicate.comparator = LESS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), false, "score", 4, 9);
+    char * name2 = "Ksenia Kirillova";
+    struct FieldValue comparableValue2 = {STRING, "name", name2, sizeof(char ) * strlen(name2)};
+    predicate.comparableValue = &comparableValue2;
+    predicate.fieldName = "name";
+    predicate.comparator = EQUALS;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), true, "name", 4, 10);
+    predicate.comparator = MORE;
+    assertEquals(checkPredicate(predicate, &entityRecord2, 4), false, "name", 4, 11);
+    printEntityRecord(&entityRecord2, 4);
 }

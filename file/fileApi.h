@@ -15,6 +15,6 @@ void writeEmptySpaceOffset(const char *name, uint64_t offset);
 struct tableOffsetBlock* readTableOffsetBlock(const char *name, uint16_t tablePosition);
 uint64_t findOffsetForTableOffsetBlock(FILE *file);
 void writeTableOffsetBlock(const char *name, struct tableOffsetBlock * tableOffsetBlock);
-void insertRecord(const char* name, struct EntityRecord* entityRecord, uint16_t fieldsNumber, struct headerSection headerSection, uint64_t offset);
+void insertRecord(const char* fileName, struct EntityRecord* entityRecord, struct tableOffsetBlock* tableOffsetBlock);
 struct EntityRecord* readRecord(const char* name, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber);
 #endif //LAB1_FILEAPI_H

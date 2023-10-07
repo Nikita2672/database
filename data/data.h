@@ -60,4 +60,5 @@ void addEntityRecordToTable(struct Table* table, struct EntityRecord* entityReco
 void freeEntityRecord(struct EntityRecord *entityRecord, uint32_t fieldsNumber);
 
 struct FieldValue* getValueByIndex(const struct EntityRecord *entityRecord, uint32_t index);
+void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber);
 #endif //LAB1_DATA_H
