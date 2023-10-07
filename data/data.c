@@ -33,10 +33,10 @@ struct EntityRecord* initEntityRecord(struct Table* table) {
     return pEntityRecord;
 }
 
-void freeEntityRecord(struct EntityRecord* entityRecord, u_int32_t fieldsNumber) {
+void freeEntityRecord(struct EntityRecord* entityRecord, uint32_t fieldsNumber) {
     if (entityRecord != NULL) {
         if (entityRecord->fields != NULL) {
-            for (u_int32_t i = 0; i < fieldsNumber; i++) {
+            for (uint32_t i = 0; i < fieldsNumber; i++) {
                 freeFieldValue(&(entityRecord->fields[i]));
             }
             free(entityRecord->fields);
@@ -61,7 +61,7 @@ void freeNameType(struct NameType* nameType) {
     }
 }
 
-struct Table* initTable(u_int32_t fieldsNumber, struct NameType* nameTypes) {
+struct Table* initTable(uint32_t fieldsNumber, struct NameType* nameTypes) {
     struct Table* table = malloc(sizeof (struct Table));
     table->capacity = DEFAULT_CAPACITY;
     table->recordsNumber = 0;
@@ -73,14 +73,14 @@ struct Table* initTable(u_int32_t fieldsNumber, struct NameType* nameTypes) {
 void freeTable(struct Table* table) {
     if (table != NULL) {
         if (table->nameTypes != NULL) {
-            for (u_int32_t i = 0; i < table->fieldsNumber; i++) {
+            for (uint32_t i = 0; i < table->fieldsNumber; i++) {
                 freeNameType(&(table->nameTypes[i]));
             }
             free(table->nameTypes);
         }
         if (table->tableName != NULL) free(table->tableName);
         if (table->records != NULL) {
-            for (u_int32_t i = 0; i < table->fieldsNumber; i++) {
+            for (uint32_t i = 0; i < table->fieldsNumber; i++) {
                 freeEntityRecord(&(table->records[i]), table->fieldsNumber);
             }
             free(table->records);
@@ -97,7 +97,7 @@ struct EntityRecord* createEntityRecord(struct FieldValue* fieldValue, struct Ta
 
 void addEntityRecordToTable(struct Table* table, struct EntityRecord* entityRecord) {
     if (table->capacity >= table->recordsNumber) {
-        u_int32_t newCapacity = table->capacity * 2;
+        uint32_t newCapacity = table->capacity * 2;
         table->records = realloc(table->records, newCapacity * sizeof (struct EntityRecord));
         if (table->records == NULL) errorAllocation("dynamic->fields while adding value");
         table->capacity = newCapacity;
@@ -106,6 +106,6 @@ void addEntityRecordToTable(struct Table* table, struct EntityRecord* entityReco
     table->recordsNumber++;
 }
 
-struct FieldValue* getValueByIndex(const struct EntityRecord *entityRecord, u_int32_t index) {
+struct FieldValue* getValueByIndex(const struct EntityRecord *entityRecord, uint32_t index) {
     return &(entityRecord->fields[index]);
 }

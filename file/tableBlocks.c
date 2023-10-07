@@ -1,6 +1,9 @@
 #include "tableBlocks.h"
+#include "allocator.h"
 #include <stdbool.h>
 #include <string.h>
+#include <bits/types/FILE.h>
+#include <stdio.h>
 
 
 struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType) {
@@ -10,14 +13,15 @@ struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NA
     return nameTypeBlock;
 }
 
-struct tableOffsetBlock* initTableOffsetBlock(const char name[MAX_LENGTH_TABLE_NAME],
-        uint64_t firstTableOffset, uint64_t lastTableOffset, uint8_t fieldsNumber,
-        const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]) {
+struct tableOffsetBlock* initTableOffsetBlock(const char* fileName, const char name[MAX_LENGTH_TABLE_NAME],
+        uint8_t fieldsNumber, const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]) {
     struct tableOffsetBlock* tableOffsetBlock = malloc(sizeof (struct tableOffsetBlock));
     tableOffsetBlock->isActive = true;
     strncpy(tableOffsetBlock->tableName, name, MAX_LENGTH_TABLE_NAME);
-    tableOffsetBlock->firsTableBlockOffset = firstTableOffset;
-    tableOffsetBlock->lastTableBLockOffset = lastTableOffset;
+    FILE* file = fopen(fileName, "rb+");
+    tableOffsetBlock->firsTableBlockOffset = allocateBlock(file, 0, 0);
+    fclose(file);
+    tableOffsetBlock->lastTableBLockOffset = tableOffsetBlock->firsTableBlockOffset;
     tableOffsetBlock->fieldsNumber = fieldsNumber;
     for (uint8_t i = 0; i < fieldsNumber; i++) {
         tableOffsetBlock->nameTypeBlock[i] = nameTypeBlock[i];

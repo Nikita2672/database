@@ -8,7 +8,8 @@
 int main() {
     test1();
     test2();
-
+    test3();
+    test4();
 //    struct tableOffsetBlock* tableOffsetBlock = readTableOffsetBlock(FILE_NAME, 0);
 //    if(true == tableOffsetBlock->isActive) printf("%s", "hello");
 //    if(false == tableOffsetBlock->isActive) printf("%s", "hello1");

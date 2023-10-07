@@ -18,20 +18,19 @@ struct tableOffsetBlock {
     bool isActive;
     char tableName[MAX_LENGTH_TABLE_NAME];
     struct NameTypeBlock nameTypeBlock[MAX_FIELDS];
-    u_int8_t fieldsNumber;
-    u_int64_t firsTableBlockOffset;
-    u_int64_t lastTableBLockOffset;
+    uint8_t fieldsNumber;
+    uint64_t firsTableBlockOffset;
+    uint64_t lastTableBLockOffset;
 };
 
 struct defineTablesBlock {
-    u_int32_t countTables;
+    uint32_t countTables;
     struct tableOffsetBlock tableOffsetBlock[MAX_TABLES];
-    u_int64_t emptySpaceOffset;
+    uint64_t emptySpaceOffset;
 };
 
 struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType);
-struct tableOffsetBlock* initTableOffsetBlock(const char name[MAX_LENGTH_TABLE_NAME],
-        uint64_t firstTableOffset, uint64_t lastTableOffset, uint8_t fieldsNumber,
+struct tableOffsetBlock* initTableOffsetBlock(const char* fileName, const char name[MAX_LENGTH_TABLE_NAME], uint8_t fieldsNumber,
         const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]);
 
 #define LAB1_BLOCKS_H

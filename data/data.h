@@ -1,3 +1,4 @@
+#include <stdint-gcc.h>
 #include "stdlib.h"
 
 #ifndef LAB1_DATA_H
@@ -16,7 +17,7 @@ struct FieldValue {
     enum DataType type;
     char* fieldName;
     void* data;
-    u_int64_t dataSize;
+    uint64_t dataSize;
 };
 
 struct NameType {
@@ -33,9 +34,9 @@ struct Table {
     char* tableName;
     struct EntityRecord *records;
     struct NameType* nameTypes;
-    u_int32_t fieldsNumber;
-    u_int32_t recordsNumber;
-    u_int32_t capacity;
+    uint32_t fieldsNumber;
+    uint32_t recordsNumber;
+    uint32_t capacity;
 
 };
 
@@ -43,7 +44,7 @@ struct Schema {
     struct Table* tables;
 };
 
-struct Table* initTable(u_int32_t fieldsNumber, struct NameType* nameTypes);
+struct Table* initTable(uint32_t fieldsNumber, struct NameType* nameTypes);
 
 struct EntityRecord* initEntityRecord(struct Table* table);
 
@@ -51,12 +52,12 @@ struct FieldValue* initFieldValue(enum DataType dataType, void* dataP, char* fie
 
 void addValueToEntityRecord(struct EntityRecord* entityRecord,
                             struct FieldValue* fieldValue,
-                            u_int32_t position);
+                            uint32_t position);
 
 struct EntityRecord* createEntityRecord(struct FieldValue* fieldValue, struct Table* table);
 void addEntityRecordToTable(struct Table* table, struct EntityRecord* entityRecord);
 
-void freeEntityRecord(struct EntityRecord *entityRecord, u_int32_t fieldsNumber);
+void freeEntityRecord(struct EntityRecord *entityRecord, uint32_t fieldsNumber);
 
-struct FieldValue* getValueByIndex(const struct EntityRecord *entityRecord, u_int32_t index);
+struct FieldValue* getValueByIndex(const struct EntityRecord *entityRecord, uint32_t index);
 #endif //LAB1_DATA_H
