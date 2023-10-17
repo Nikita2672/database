@@ -16,5 +16,5 @@ struct tableOffsetBlock* readTableOffsetBlock(const char *name, uint16_t tablePo
 uint64_t findOffsetForTableOffsetBlock(FILE *file);
 void writeTableOffsetBlock(const char *name, struct tableOffsetBlock * tableOffsetBlock);
 void insertRecord(const char* fileName, struct EntityRecord* entityRecord, struct tableOffsetBlock* tableOffsetBlock);
-struct EntityRecord* readRecord(const char* name, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber);
+struct EntityRecord *readRecord(FILE * file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber);
 #endif //LAB1_FILEAPI_H

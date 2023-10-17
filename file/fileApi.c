@@ -216,12 +216,7 @@ void insertRecord(const char *fileName, struct EntityRecord *entityRecord, struc
     }
 }
 
-struct EntityRecord *readRecord(const char *name, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
-    FILE *file = fopen(name, "rb+");
-    if (file == NULL) {
-        printf("Error opening file\n");
-        return NULL;
-    }
+struct EntityRecord *readRecord(FILE * file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
     idPosition++;
     struct headerSection *headerSection = malloc(sizeof(struct headerSection));
     fseek(file, offset, SEEK_SET);
@@ -249,7 +244,6 @@ struct EntityRecord *readRecord(const char *name, uint16_t idPosition, uint64_t 
     entityRecord->fields = fields;
     free(headerSection);
     free(recordId);
-    fclose(file);
     return entityRecord;
 }
 
@@ -306,35 +300,25 @@ void insertRecordIntoTable(const char *fileName, struct EntityRecord *entityReco
     }
 }
 
-void readEntityRecordWithCondition(const char *fileName, const char *tableName, struct predicate *predicate,
+struct iterator* readEntityRecordWithCondition(const char *fileName, const char *tableName, struct predicate *predicate,
                               uint8_t predicateNumber) {
     FILE *file = fopen(fileName, "rb+");
     if (file == NULL) {
         printf("Error opening file\n");
-        return;
+        return NULL;
     }
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     if (tableOffsetBlock == NULL) {
         printf("there is no %s table", tableName);
-        return;
+        return NULL;
     }
     uint64_t offset = tableOffsetBlock->firsTableBlockOffset;
-    while (offset != 0) {
-        uint16_t counter = 0;
-        fseek(file, offset, SEEK_SET);
-        struct headerSection headerSection;
-        fread(&headerSection, sizeof(struct headerSection), 1, file);
-        while (counter <= headerSection.recordsNumber) {
-            counter++;
-            struct EntityRecord* entityRecord = readRecord(fileName, counter, offset, tableOffsetBlock->fieldsNumber);
-            for (uint8_t i = 0; i < predicateNumber; i++) {
-                bool result = checkPredicate(predicate[i], entityRecord, tableOffsetBlock->fieldsNumber);
-                if (result) printf("%s");
-            }
-        }
-        fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
-        struct specialDataSection specialDataSection;
-        fread(&specialDataSection, sizeof(struct specialDataSection), 1, file);
-        offset = specialDataSection.nextBlockOffset;
-    }
+    struct iterator* iterator = malloc(sizeof (struct iterator));
+
+    iterator->predicate = predicate;
+    iterator->predicateNumber = predicateNumber;
+    iterator->blockOffset = tableOffsetBlock->firsTableBlockOffset;
+    iterator->currentPositionInBlock = 0;
+    iterator->fieldsNumber = tableOffsetBlock->fieldsNumber;
+    return iterator;
 }

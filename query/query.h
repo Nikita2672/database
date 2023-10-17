@@ -39,5 +39,5 @@ struct query* createQuery(enum operations operation, struct predicate* predicate
 struct predicate* createPredicate(struct FieldValue* comparableValue, char *fieldName, enum compare comparator);
 void freePredicate(struct predicate* predicate);
 void freeQuery(struct query* query);
-bool checkPredicate(struct predicate predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber);
+bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber);
 #endif //LAB1_QUERY_H

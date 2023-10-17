@@ -30,11 +30,11 @@ struct predicate* createPredicate(struct FieldValue* comparableValue, char *fiel
     return newPredicate;
 }
 
-bool checkPredicate(struct predicate predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber) {
+bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
-        if (strcmp(entityRecord->fields[i].fieldName, predicate.fieldName) == 0) {
-            int8_t result = compare(entityRecord->fields[i], *predicate.comparableValue);
-            switch (predicate.comparator) {
+        if (strcmp(entityRecord->fields[i].fieldName, predicate->fieldName) == 0) {
+            int8_t result = compare(entityRecord->fields[i], *predicate->comparableValue);
+            switch (predicate->comparator) {
                 case EQUALS:
                     return result == 0;
                 case MORE:
@@ -50,7 +50,7 @@ bool checkPredicate(struct predicate predicate, struct EntityRecord* entityRecor
             }
         }
     }
-    printf("there is no %s field in table", predicate.fieldName);
+    printf("there is no %s field in table", predicate->fieldName);
     return false;
 }
 
