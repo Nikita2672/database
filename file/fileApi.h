@@ -6,15 +6,28 @@
 #include "../data/data.h"
 #include "dataBlocks.h"
 
-void writeEmptyTablesBlock(const char *name);
-struct defineTablesBlock* readTablesBlock(const char *name);
-uint32_t readTablesCount(const char *name);
-uint64_t readEmptySpaceOffset(const char *name);
-void writeTableCount(const char *name, uint32_t tablesCount);
-void writeEmptySpaceOffset(const char *name, uint64_t offset);
-struct tableOffsetBlock* readTableOffsetBlock(const char *name, uint16_t tablePosition);
+void writeEmptyTablesBlock(FILE *file);
+
+struct defineTablesBlock *readTablesBlock(FILE *file);
+
+uint32_t readTablesCount(FILE *file);
+
+uint64_t readEmptySpaceOffset(FILE *file);
+
+void writeTableCount(FILE *file, uint32_t tablesCount);
+
+void writeEmptySpaceOffset(FILE *file, uint64_t offset);
+
+struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition);
+
 uint64_t findOffsetForTableOffsetBlock(FILE *file);
-void writeTableOffsetBlock(const char *name, struct tableOffsetBlock * tableOffsetBlock);
-void insertRecord(const char* fileName, struct EntityRecord* entityRecord, struct tableOffsetBlock* tableOffsetBlock);
-struct EntityRecord *readRecord(FILE * file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber);
+
+void writeTableOffsetBlock(FILE *file, struct tableOffsetBlock *tableOffsetBlock);
+
+void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOffsetBlock *tableOffsetBlock);
+
+struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber);
+
+void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const char *tableName);
+
 #endif //LAB1_FILEAPI_H
