@@ -28,11 +28,13 @@ struct defineTablesBlock *readTablesBlock(FILE *file) {
 
 uint32_t readTablesCount(FILE *file) {
     uint32_t tablesCount;
+    fseek(file, 0, SEEK_SET);
     fread(&tablesCount, sizeof(uint32_t), 1, file);
     return tablesCount;
 }
 
 void writeTableCount(FILE *file, uint32_t tablesCount) {
+    fseek(file, 0, SEEK_SET);
     fwrite(&tablesCount, sizeof(uint32_t), 1, file);
 }
 
@@ -112,18 +114,15 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
     uint64_t neededSpace = countNeededSpace(entityRecord, fieldsNumber);
     if (neededSpace <= space) {
         fseek(file, offset + sizeof(struct headerSection) + headerSection.startEmptySpaceOffset, SEEK_SET);
+        uint16_t writtenData = 0;
         for (uint16_t i = 0; i < fieldsNumber; i++) {
             struct FieldValue *field = &entityRecord->fields[i];
-            headerSection.startEmptySpaceOffset +=
-                    fwrite(&field->type, sizeof(enum DataType), 1, file) * sizeof(enum DataType);
+            writtenData += fwrite(&field->type, sizeof(enum DataType), 1, file) * sizeof(enum DataType);
             uint64_t fieldNameLength = strlen(field->fieldName) + 1;
-            headerSection.startEmptySpaceOffset +=
-                    fwrite(&fieldNameLength, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
-            headerSection.startEmptySpaceOffset +=
-                    fwrite(field->fieldName, sizeof(char), fieldNameLength, file) * sizeof(char);
-            headerSection.startEmptySpaceOffset +=
-                    fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
-            headerSection.startEmptySpaceOffset += fwrite(field->data, 1, field->dataSize, file);
+            writtenData += fwrite(&fieldNameLength, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
+            writtenData += fwrite(field->fieldName, sizeof(char), fieldNameLength, file) * sizeof(char);
+            writtenData += fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
+            writtenData += fwrite(field->data, 1, field->dataSize, file);
         }
         uint16_t length = abs(beforeWriteOffset - headerSection.startEmptySpaceOffset);
         uint16_t offsetRecord = beforeWriteOffset;
@@ -136,6 +135,7 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
         fwrite(&recordId, sizeof(struct recordId), 1, file);
         fseek(file, offset, SEEK_SET);
         headerSection.endEmptySpaceOffset -= sizeof(struct recordId);
+        headerSection.startEmptySpaceOffset = writtenData;
         headerSection.recordsNumber++;
         fwrite(&headerSection, sizeof(struct headerSection), 1, file);
     } else {

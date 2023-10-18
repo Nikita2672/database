@@ -4,16 +4,11 @@
 #include "dataBlocks.h"
 #include "../query/query.h"
 
-bool hasNext (struct iterator* iterator, const char* fileName) {
-    FILE *file = fopen(fileName, "rb+");
-    if (file == NULL) {
-        printf("Error opening file\n");
-        return false;
-    }
+bool hasNext (struct iterator* iterator, FILE* file) {
     struct headerSection headerSection;
-    fseek(file, iterator->blockOffset, SEEK_CUR);
+    fseek(file, iterator->blockOffset, SEEK_SET);
     fread(&headerSection, sizeof (struct headerSection), 1, file);
-    bool hasNext = false;
+    bool hasNextVariable = false;
     for (uint16_t i = iterator->currentPositionInBlock; i < headerSection.recordsNumber; i++) {
         struct EntityRecord* entityRecord = readRecord(file, i, iterator->blockOffset,iterator->fieldsNumber);
         bool valid = true;
@@ -24,17 +19,26 @@ bool hasNext (struct iterator* iterator, const char* fileName) {
                 break;
             }
         }
-        // дописать malloc entityRecord
+        freeEntityRecord(entityRecord, iterator->fieldsNumber);
         if (valid) {
-            hasNext = true;
+            hasNextVariable = true;
             iterator->currentPositionInBlock = i;
-            return hasNext;
+            return hasNextVariable;
         }
     }
-    // дописать логику перехода на следующий блок при наличии в противном случае вернуть false
+    fseek(file, iterator->blockOffset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+    struct specialDataSection specialDataSection;
+    fread(&specialDataSection, sizeof (struct specialDataSection), 1, file);
+    if (specialDataSection.nextBlockOffset != 0) {
+        iterator->currentPositionInBlock = 0;
+        iterator->blockOffset = specialDataSection.nextBlockOffset;
+        return hasNext(iterator, file);
+    } else {
+        return false;
+    }
 }
 
 
-struct EntityRecord* next(struct iterator* iterator, char * fileName) {
-
+struct EntityRecord* next(struct iterator* iterator, FILE* file) {
+    return readRecord(file, iterator->currentPositionInBlock, iterator->blockOffset,iterator->fieldsNumber);
 }

@@ -44,6 +44,7 @@ struct Schema {
     struct Table* tables;
 };
 
+
 struct Table* initTable(uint32_t fieldsNumber, struct NameType* nameTypes);
 
 struct EntityRecord* initEntityRecord(struct Table* table);

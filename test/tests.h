@@ -4,4 +4,6 @@ void test1();
 void test2();
 void test3();
 void test4();
+void test5();
+void testReadWrite();
 #endif //LAB1_TESTS_H

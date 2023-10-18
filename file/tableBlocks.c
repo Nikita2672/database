@@ -13,16 +13,14 @@ struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NA
     return nameTypeBlock;
 }
 
-struct tableOffsetBlock* initTableOffsetBlock(const char* fileName, const char name[MAX_LENGTH_TABLE_NAME],
+struct tableOffsetBlock* initTableOffsetBlock(FILE* file, const char name[MAX_LENGTH_TABLE_NAME],
         uint8_t fieldsNumber, const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]) {
     struct tableOffsetBlock* tableOffsetBlock = malloc(sizeof (struct tableOffsetBlock));
     tableOffsetBlock->isActive = true;
-    strncpy(tableOffsetBlock->tableName, name, MAX_LENGTH_TABLE_NAME);
-    FILE* file = fopen(fileName, "rb+");
     tableOffsetBlock->firsTableBlockOffset = allocateBlock(file, 0, 0);
-    fclose(file);
     tableOffsetBlock->lastTableBLockOffset = tableOffsetBlock->firsTableBlockOffset;
     tableOffsetBlock->fieldsNumber = fieldsNumber;
+    strcpy(tableOffsetBlock->tableName, name);
     for (uint8_t i = 0; i < fieldsNumber; i++) {
         tableOffsetBlock->nameTypeBlock[i] = nameTypeBlock[i];
     }

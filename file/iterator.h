@@ -9,8 +9,6 @@
 #include "../query/query.h"
 
 bool hasNextBlock(FILE * file, uint64_t offset);
-struct EntityRecord* next(struct iterator* iterator, char * fileName);
-
 struct iterator {
     struct predicate* predicate;
     uint8_t predicateNumber;
@@ -18,5 +16,8 @@ struct iterator {
     uint64_t blockOffset;
     uint8_t fieldsNumber;
 };
+bool hasNext (struct iterator* iterator, FILE* file);
+struct EntityRecord* next(struct iterator* iterator, FILE * file);
+
 
 #endif //LAB1_ITERATOR_H

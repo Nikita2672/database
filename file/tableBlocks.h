@@ -1,3 +1,4 @@
+#include <bits/types/FILE.h>
 #include "../data/data.h"
 #include "stdbool.h"
 #include "stdlib.h"
@@ -30,8 +31,8 @@ struct defineTablesBlock {
 };
 
 struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType);
-struct tableOffsetBlock* initTableOffsetBlock(const char* fileName, const char name[MAX_LENGTH_TABLE_NAME], uint8_t fieldsNumber,
-        const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]);
+struct tableOffsetBlock* initTableOffsetBlock(FILE* file, const char name[MAX_LENGTH_TABLE_NAME],
+                                              uint8_t fieldsNumber, const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]);
 
 #define LAB1_BLOCKS_H
 
