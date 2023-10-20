@@ -30,4 +30,6 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
 
 void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const char *tableName);
 
+struct iterator *readEntityRecordWithCondition(FILE* file, const char *tableName, struct predicate *predicate,
+                                               uint8_t predicateNumber);
 #endif //LAB1_FILEAPI_H

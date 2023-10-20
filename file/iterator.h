@@ -8,7 +8,6 @@
 #include "../data/data.h"
 #include "../query/query.h"
 
-bool hasNextBlock(FILE * file, uint64_t offset);
 struct iterator {
     struct predicate* predicate;
     uint8_t predicateNumber;

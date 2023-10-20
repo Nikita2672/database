@@ -19,10 +19,10 @@ bool hasNext (struct iterator* iterator, FILE* file) {
                 break;
             }
         }
-        freeEntityRecord(entityRecord, iterator->fieldsNumber);
+//        freeEntityRecord(entityRecord, iterator->fieldsNumber);
         if (valid) {
             hasNextVariable = true;
-            iterator->currentPositionInBlock = i;
+            iterator->currentPositionInBlock = (i + 1);
             return hasNextVariable;
         }
     }
@@ -40,5 +40,5 @@ bool hasNext (struct iterator* iterator, FILE* file) {
 
 
 struct EntityRecord* next(struct iterator* iterator, FILE* file) {
-    return readRecord(file, iterator->currentPositionInBlock, iterator->blockOffset,iterator->fieldsNumber);
+    return readRecord(file, iterator->currentPositionInBlock - 1, iterator->blockOffset,iterator->fieldsNumber);
 }

@@ -135,7 +135,7 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
         fwrite(&recordId, sizeof(struct recordId), 1, file);
         fseek(file, offset, SEEK_SET);
         headerSection.endEmptySpaceOffset -= sizeof(struct recordId);
-        headerSection.startEmptySpaceOffset = writtenData;
+        headerSection.startEmptySpaceOffset += writtenData;
         headerSection.recordsNumber++;
         fwrite(&headerSection, sizeof(struct headerSection), 1, file);
     } else {
@@ -199,11 +199,11 @@ void deleteRecord(FILE* file, uint32_t position, uint64_t offset) {
 }
 
 struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName) {
-    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(tableOffsetBlock));
+    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
     fseek(file, sizeof(uint32_t), SEEK_SET);
     for (uint16_t i = 0; i < MAX_TABLES; i++) {
         fread(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
-        if (tableOffsetBlock->tableName == tableName) {
+        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
             return tableOffsetBlock;
         }
     }
@@ -212,11 +212,9 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
 }
 
 void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const char *tableName) {
-    fseek(file, sizeof(uint32_t), SEEK_SET);
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     if (tableOffsetBlock == NULL) {
         printf("There is no %s table", tableName);
-        free(tableOffsetBlock);
         return;
     } else {
         struct headerSection headerSection;
@@ -235,7 +233,6 @@ struct iterator *readEntityRecordWithCondition(FILE* file, const char *tableName
         printf("there is no %s table", tableName);
         return NULL;
     }
-    uint64_t offset = tableOffsetBlock->firsTableBlockOffset;
     struct iterator *iterator = malloc(sizeof(struct iterator));
 
     iterator->predicate = predicate;
