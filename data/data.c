@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "data.h"
 #include "../errors.h"
+#include "../file/tableBlocks.h"
 
 
 #define DEFAULT_CAPACITY 200
@@ -12,15 +13,12 @@ struct FieldValue *initFieldValue(enum DataType dataType, void *dataP, char *fie
     struct FieldValue *pFieldValue = malloc(sizeof(struct FieldValue));
     if (pFieldValue == NULL) errorAllocation("pFieldValue");
     pFieldValue->data = dataP;
-    pFieldValue->type = dataType;
-    pFieldValue->fieldName = fieldName;
     pFieldValue->dataSize = 0;
     return pFieldValue;
 }
 
 void freeFieldValue(struct FieldValue *fieldValue) {
     if (fieldValue != NULL) {
-        if (fieldValue->fieldName != NULL) free(fieldValue->fieldName);
         if (fieldValue->data != NULL) free(fieldValue->data);
         free(fieldValue);
     }
@@ -109,30 +107,4 @@ void addEntityRecordToTable(struct Table *table, struct EntityRecord *entityReco
 
 struct FieldValue *getValueByIndex(const struct EntityRecord *entityRecord, uint32_t index) {
     return &(entityRecord->fields[index]);
-}
-
-
-void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber) {
-    for (uint16_t i = 0; i < fieldsNumber; i++) {
-        printf("%s: ", entityRecord->fields[i].fieldName);
-        switch (entityRecord->fields[i].type) {
-            case INT:
-                printf("%d; ", *(int32_t *) entityRecord->fields[i].data);
-                break;
-            case DOUBLE:
-                printf("%f; ", *(double *) entityRecord->fields[i].data);
-                break;
-            case BOOL:
-                if (*(bool *) entityRecord->fields[i].data) {
-                    printf("true; ");
-                } else {
-                    printf("false; ");
-                }
-                break;
-            default:
-                printf("%s; ", (char *) entityRecord->fields[i].data);
-                break;
-        }
-    }
-    printf("\n");
 }

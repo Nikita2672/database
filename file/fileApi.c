@@ -94,9 +94,6 @@ void writeDataBlock(uint64_t offset, FILE *file, struct headerSection *headerSec
 uint64_t countNeededSpace(struct EntityRecord *entityRecord, uint8_t fieldsNumber) {
     uint16_t neededSpace = sizeof(struct recordId);
     for (uint16_t i = 0; i < fieldsNumber; i++) {
-        neededSpace += sizeof(enum DataType);
-        neededSpace += sizeof(uint64_t);
-        neededSpace += (strlen(entityRecord->fields[i].fieldName) + 1) * sizeof(char);
         neededSpace += sizeof(uint64_t);
         neededSpace += entityRecord->fields[i].dataSize;
     }
@@ -117,10 +114,6 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
         uint16_t writtenData = 0;
         for (uint16_t i = 0; i < fieldsNumber; i++) {
             struct FieldValue *field = &entityRecord->fields[i];
-            writtenData += fwrite(&field->type, sizeof(enum DataType), 1, file) * sizeof(enum DataType);
-            uint64_t fieldNameLength = strlen(field->fieldName) + 1;
-            writtenData += fwrite(&fieldNameLength, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
-            writtenData += fwrite(field->fieldName, sizeof(char), fieldNameLength, file) * sizeof(char);
             writtenData += fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
             writtenData += fwrite(field->data, 1, field->dataSize, file);
         }
@@ -170,11 +163,6 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
     struct FieldValue *fields = malloc(sizeof(struct FieldValue) * fieldsNumber);
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         struct FieldValue *field = malloc(sizeof(struct FieldValue));
-        fread(&field->type, sizeof(enum DataType), 1, file);
-        uint64_t fieldNameLength;
-        fread(&fieldNameLength, sizeof(uint64_t), 1, file);
-        field->fieldName = malloc(fieldNameLength);
-        fread(field->fieldName, sizeof(char), fieldNameLength, file);
         fread(&field->dataSize, sizeof(uint64_t), 1, file);
         field->data = malloc(field->dataSize);
         fread(field->data, field->dataSize, 1, file);
@@ -214,7 +202,7 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
 void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const char *tableName) {
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     if (tableOffsetBlock == NULL) {
-        printf("There is no %s table", tableName);
+        printf("There is no %s table\n", tableName);
         return;
     } else {
         struct headerSection headerSection;
@@ -230,7 +218,7 @@ struct iterator *readEntityRecordWithCondition(FILE* file, const char *tableName
                                                uint8_t predicateNumber) {
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     if (tableOffsetBlock == NULL) {
-        printf("there is no %s table", tableName);
+        printf("there is no %s table\n", tableName);
         return NULL;
     }
     struct iterator *iterator = malloc(sizeof(struct iterator));
@@ -240,5 +228,6 @@ struct iterator *readEntityRecordWithCondition(FILE* file, const char *tableName
     iterator->blockOffset = tableOffsetBlock->firsTableBlockOffset;
     iterator->currentPositionInBlock = 0;
     iterator->fieldsNumber = tableOffsetBlock->fieldsNumber;
+    iterator->nameTypeBlock = tableOffsetBlock->nameTypeBlock;
     return iterator;
 }

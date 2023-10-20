@@ -13,7 +13,7 @@ bool hasNext (struct iterator* iterator, FILE* file) {
         struct EntityRecord* entityRecord = readRecord(file, i, iterator->blockOffset,iterator->fieldsNumber);
         bool valid = true;
         for (uint16_t j = 0; j < iterator->predicateNumber; j++) {
-            bool result = checkPredicate(&iterator->predicate[j], entityRecord, iterator->fieldsNumber);
+            bool result = checkPredicate(&iterator->predicate[j], entityRecord, iterator->fieldsNumber, iterator->nameTypeBlock);
             if (!result) {
                 valid = false;
                 break;

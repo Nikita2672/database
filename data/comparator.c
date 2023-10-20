@@ -28,8 +28,8 @@ int8_t compareBoolean(bool value1, bool value2) {
 }
 
 
-int8_t compare(struct FieldValue fieldValue1, struct FieldValue fieldValue2) {
-    switch (fieldValue1.type) {
+int8_t compare(struct FieldValue fieldValue1, struct FieldValue fieldValue2, enum DataType dataType) {
+    switch (dataType) {
         case INT:
             return compareInt(*(int32_t *)fieldValue1.data, *(int32_t *)fieldValue2.data);
         case DOUBLE:

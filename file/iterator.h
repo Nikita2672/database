@@ -14,6 +14,7 @@ struct iterator {
     uint16_t currentPositionInBlock;
     uint64_t blockOffset;
     uint8_t fieldsNumber;
+    struct NameTypeBlock* nameTypeBlock;
 };
 bool hasNext (struct iterator* iterator, FILE* file);
 struct EntityRecord* next(struct iterator* iterator, FILE * file);
