@@ -1,5 +1,6 @@
 #include "../file/tableBlocks.h"
 #include "tests.h"
+#include "local.h"
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 
@@ -10,5 +11,6 @@ int main() {
     test4();
     test5();
     test6();
+//    local();
     return 0;
 }
