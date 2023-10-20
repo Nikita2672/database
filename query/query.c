@@ -3,6 +3,7 @@
 #include "../errors.h"
 #include "query.h"
 #include "../data/comparator.h"
+#include "../file/tableBlocks.h"
 
 struct query* createQuery(enum operations operation, struct predicate* predicate,
         uint32_t predicateNumber, char *tableName) {
@@ -30,10 +31,12 @@ struct predicate* createPredicate(struct FieldValue* comparableValue, char *fiel
     return newPredicate;
 }
 
-bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber) {
+bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber,
+        struct NameTypeBlock* nameTypeBlock) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
-        if (strcmp(entityRecord->fields[i].fieldName, predicate->fieldName) == 0) {
-            int8_t result = compare(entityRecord->fields[i], *predicate->comparableValue);
+        char* fieldName = nameTypeBlock[i].fieldName;
+        if (strcmp(fieldName, predicate->fieldName) == 0) {
+            int8_t result = compare(entityRecord->fields[i], *predicate->comparableValue, nameTypeBlock[i].dataType);
             switch (predicate->comparator) {
                 case EQUALS:
                     return result == 0;
@@ -50,7 +53,7 @@ bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityReco
             }
         }
     }
-    printf("there is no %s field in table", predicate->fieldName);
+    printf("there is no %s field in table\n", predicate->fieldName);
     return false;
 }
 
