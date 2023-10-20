@@ -174,11 +174,10 @@ void test3() {
     assertEquals(*(uint16_t *) entityRecord22->fields[3].data, 19, "value4", 3, 24);
     fseek(file, 0, SEEK_SET);
     fread(&headerSection1, sizeof(struct headerSection), 1, file);
-    assertEquals(headerSection1.recordsNumber, 2, "recordsNumber", 3, 20);
-    assertEquals(headerSection1.pageNumber, 0, "pageNUmber", 3, 21);
+    assertEquals(headerSection1.recordsNumber, 2, "recordsNumber", 3, 25);
+    assertEquals(headerSection1.pageNumber, 0, "pageNUmber", 3, 26);
     assertEquals(headerSection1.endEmptySpaceOffset, BLOCK_DATA_SIZE - sizeof(struct recordId) * 2,
-                 "endEmptySpaceOffset", 3, 22);
-    assertEquals(headerSection1.startEmptySpaceOffset, 126, "startEmptySpaceOffset", 3, 23);
+                 "endEmptySpaceOffset", 3, 27);
     fclose(file);
 }
 
@@ -284,7 +283,7 @@ void test5() {
     struct iterator *iterator = readEntityRecordWithCondition(file, "User", NULL, 0);
     bool isNext1 = hasNext(iterator, file);
     assertEquals(isNext1, true, "hasNext", 5, 1);
-    struct EntityRecord* entityRecord1 = next(iterator, file);
+    struct EntityRecord *entityRecord1 = next(iterator, file);
     assertEquals(*(double *) entityRecord1->fields[0].data, 123.3, "score", 5, 2);
     assertEqualsS((char *) entityRecord1->fields[1].data, "Ksenia", "name", 5, 3);
     assertEqualsS((char *) entityRecord1->fields[2].data, "Kirillova", "surname", 5, 4);
@@ -329,5 +328,36 @@ void test5() {
 
     bool isNext6 = hasNext(iterator, file);
     assertEquals(isNext6, false, "hasNext", 5, 1);
+    fclose(file);
+}
+
+//check iterator with predicates
+
+void test6() {
+    FILE *file = fopen(FILE_NAME, "rb+");
+    double score = 356;
+    int32_t age = 20;
+    struct FieldValue fieldValue = {DOUBLE, "score", &score, sizeof(double)};
+    struct FieldValue fieldValue1 = {INT, "age", &age, sizeof(int32_t)};
+    struct predicate predicate[2] = {{&fieldValue,  "score", LESS},
+                                     {&fieldValue1, "age",   MORE_OR_EQUALS}};
+    struct iterator *iterator = readEntityRecordWithCondition(file, "User", predicate, 2);
+    bool nextVal = hasNext(iterator, file);
+    assertEquals(nextVal, true, "next", 6, 1);
+    struct EntityRecord *entityRecord = next(iterator, file);
+    assertEquals(*(double *) entityRecord->fields[0].data, 128, "score", 6, 2);
+    assertEqualsS((char *) entityRecord->fields[1].data, "Nikita", "name", 6, 3);
+    assertEqualsS((char *) entityRecord->fields[2].data, "Ivanov", "surname", 6, 4);
+    assertEquals(*(bool *) entityRecord->fields[3].data, true, "sex", 6, 5);
+    assertEquals(*(uint16_t *) entityRecord->fields[4].data, 20, "age", 6, 6);
+
+    char *name = "Nikita";
+    struct FieldValue fieldValue2 = {STRING, "name", name, sizeof(char) * strlen(name)};
+    struct predicate predicate1[1] = {&fieldValue2, "name", EQUALS};
+    struct iterator *iterator1 = readEntityRecordWithCondition(file, "User", predicate1, 1);
+    bool nextVal1 = hasNext(iterator1, file);
+    assertEquals(nextVal1, true, "next", 6, 7);
+    struct EntityRecord *pEntityRecord = next(iterator1, file);
+    assertEqualsS(pEntityRecord->fields[1].data, "Nikita", "name", 6, 8);
     fclose(file);
 }

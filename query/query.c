@@ -42,9 +42,9 @@ bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityReco
                 case LESS:
                     return result == -1;
                 case MORE_OR_EQUALS:
-                    return result >= 1;
+                    return result >= 0;
                 case LESS_OR_EQUALS:
-                    return result <= 1;
+                    return result <= 0;
                 default:
                     return false;
             }
