@@ -117,7 +117,7 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
             writtenData += fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
             writtenData += fwrite(field->data, 1, field->dataSize, file);
         }
-        uint16_t length = abs(beforeWriteOffset - headerSection.startEmptySpaceOffset);
+        uint16_t length = writtenData;
         uint16_t offsetRecord = beforeWriteOffset;
         struct recordId recordId;
         recordId.offset = offsetRecord;
@@ -156,27 +156,20 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
     unsigned char* buffer = malloc(blockSize);
     fread(buffer, blockSize, 1, file);
     memcpy(headerSection, buffer, sizeof (struct headerSection));
-//    fread(headerSection, sizeof(struct headerSection), 1, file);
-//    uint64_t recordIdOffset =
-//            offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE - (sizeof(struct recordId) * idPosition);
-//    fseek(file, recordIdOffset, SEEK_SET);
     uint64_t recordIdOffset = sizeof(struct headerSection) + BLOCK_DATA_SIZE - (sizeof(struct recordId) * idPosition);
     struct recordId *recordId = malloc(sizeof(struct recordId));
-//    fread(recordId, sizeof(struct recordId), 1, file);
     memcpy(recordId, buffer + (recordIdOffset), sizeof (struct recordId));
     fseek(file, offset + sizeof(struct headerSection) + recordId->offset, SEEK_SET);
     struct EntityRecord *entityRecord = malloc(sizeof(struct EntityRecord));
     struct FieldValue *fields = malloc(sizeof(struct FieldValue) * fieldsNumber);
-    uint32_t readedData = sizeof (struct headerSection);
+    uint32_t readingOffset = sizeof (struct headerSection) + recordId->offset;
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         struct FieldValue *field = malloc(sizeof(struct FieldValue));
-        memcpy(&field->dataSize, buffer + readedData, sizeof (uint64_t));
-        readedData += sizeof (uint64_t);
-//        fread(&field->dataSize, sizeof(uint64_t), 1, file);
+        memcpy(&field->dataSize, buffer  + readingOffset, sizeof (uint64_t));
+        readingOffset += sizeof (uint64_t);
         field->data = malloc(field->dataSize);
-        memcpy(&field->data, buffer + readedData, field->dataSize);
-        readedData += sizeof (field->dataSize);
-//        fread(field->data, field->dataSize, 1, file);
+        memcpy(field->data, buffer + readingOffset, field->dataSize);
+        readingOffset += field->dataSize;
         fields[i] = *field;
     }
     entityRecord->fields = fields;
