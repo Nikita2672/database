@@ -63,17 +63,19 @@ struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition
 }
 
 uint64_t findOffsetForTableOffsetBlock(FILE *file) {
+    unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
+    fseek(file, sizeof(uint32_t), SEEK_SET);
+    fread(buffer, sizeof(struct tableOffsetBlock) * MAX_TABLES, 1, file);
+    struct tableOffsetBlock tableOffsetBlock;
     for (uint64_t i = 0; i < MAX_TABLES; i++) {
-        uint64_t offset = (sizeof(uint32_t) + (sizeof(struct tableOffsetBlock) * i));
-        fseek(file, offset, SEEK_SET);
-        struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
-        fread(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
-        if (!(tableOffsetBlock->isActive)) {
-            free(tableOffsetBlock);
-            return offset;
+        uint64_t offset = (sizeof(struct tableOffsetBlock) * i);
+        memcpy(&tableOffsetBlock, buffer + offset, sizeof(struct tableOffsetBlock));
+        if (!(tableOffsetBlock.isActive)) {
+            free(buffer);
+            return offset + sizeof(uint32_t);
         }
-        free(tableOffsetBlock);
     }
+    free(buffer);
     return 0;
 }
 
@@ -152,26 +154,28 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
     idPosition++;
     struct headerSection *headerSection = malloc(sizeof(struct headerSection));
     fseek(file, offset, SEEK_SET);
-    uint32_t blockSize = sizeof (unsigned char) * sizeof (struct headerSection) + BLOCK_DATA_SIZE + sizeof (struct specialDataSection);
-    unsigned char* buffer = malloc(blockSize);
+    uint32_t blockSize =
+            sizeof(unsigned char) * sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection);
+    unsigned char *buffer = malloc(blockSize);
     fread(buffer, blockSize, 1, file);
-    memcpy(headerSection, buffer, sizeof (struct headerSection));
+    memcpy(headerSection, buffer, sizeof(struct headerSection));
     uint64_t recordIdOffset = sizeof(struct headerSection) + BLOCK_DATA_SIZE - (sizeof(struct recordId) * idPosition);
     struct recordId *recordId = malloc(sizeof(struct recordId));
-    memcpy(recordId, buffer + (recordIdOffset), sizeof (struct recordId));
+    memcpy(recordId, buffer + (recordIdOffset), sizeof(struct recordId));
     fseek(file, offset + sizeof(struct headerSection) + recordId->offset, SEEK_SET);
     struct EntityRecord *entityRecord = malloc(sizeof(struct EntityRecord));
     struct FieldValue *fields = malloc(sizeof(struct FieldValue) * fieldsNumber);
-    uint32_t readingOffset = sizeof (struct headerSection) + recordId->offset;
+    uint32_t readingOffset = sizeof(struct headerSection) + recordId->offset;
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         struct FieldValue *field = malloc(sizeof(struct FieldValue));
-        memcpy(&field->dataSize, buffer  + readingOffset, sizeof (uint64_t));
-        readingOffset += sizeof (uint64_t);
+        memcpy(&field->dataSize, buffer + readingOffset, sizeof(uint64_t));
+        readingOffset += sizeof(uint64_t);
         field->data = malloc(field->dataSize);
         memcpy(field->data, buffer + readingOffset, field->dataSize);
         readingOffset += field->dataSize;
         fields[i] = *field;
     }
+    free(buffer);
     entityRecord->fields = fields;
     free(headerSection);
     free(recordId);
@@ -179,7 +183,7 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
 }
 
 // rewrite
-void deleteRecord(FILE* file, uint32_t position, uint64_t offset) {
+void deleteRecord(FILE *file, uint32_t position, uint64_t offset) {
     fseek(file, offset, SEEK_SET);
     struct headerSection headerSection;
     fread(&headerSection, sizeof(struct headerSection), 1, file);
@@ -203,7 +207,26 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
     return NULL;
 }
 
-void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const char *tableName) {
+//struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName) {
+//    unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
+//    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
+//    fseek(file, sizeof(uint32_t), SEEK_SET);
+//    fread(buffer, sizeof(struct tableOffsetBlock) * MAX_TABLES, 1, file);
+//    for (uint16_t i = 0; i < MAX_TABLES; i++) {
+//        uint64_t offset = sizeof(struct tableOffsetBlock) * i;
+//        memcpy(tableOffsetBlock, buffer + offset, sizeof (struct tableOffsetBlock));
+//        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
+//            //проблема
+//            free(buffer);
+//            return tableOffsetBlock;
+//        }
+//    }
+//    free(buffer);
+//    free(tableOffsetBlock);
+//    return NULL;
+//}
+
+void insertRecordIntoTable(FILE *file, struct EntityRecord *entityRecord, const char *tableName) {
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     if (tableOffsetBlock == NULL) {
         printf("There is no %s table\n", tableName);
@@ -218,7 +241,7 @@ void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const 
     }
 }
 
-struct iterator *readEntityRecordWithCondition(FILE* file, const char *tableName, struct predicate *predicate,
+struct iterator *readEntityRecordWithCondition(FILE *file, const char *tableName, struct predicate *predicate,
                                                uint8_t predicateNumber) {
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     if (tableOffsetBlock == NULL) {
