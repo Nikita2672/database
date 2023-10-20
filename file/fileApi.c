@@ -117,7 +117,7 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
             writtenData += fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
             writtenData += fwrite(field->data, 1, field->dataSize, file);
         }
-        uint16_t length = abs(beforeWriteOffset - headerSection.startEmptySpaceOffset);
+        uint16_t length = writtenData;
         uint16_t offsetRecord = beforeWriteOffset;
         struct recordId recordId;
         recordId.offset = offsetRecord;
