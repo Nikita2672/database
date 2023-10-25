@@ -8,4 +8,5 @@
 #include "../file/tableBlocks.h"
 #include "stdio.h"
 void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber, struct NameTypeBlock* nameTypeBlock);
+char* cutString(char* string, uint64_t start, uint64_t end);
 #endif //LAB1_UTIL_H
