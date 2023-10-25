@@ -249,7 +249,8 @@ struct iterator *readEntityRecordWithCondition(FILE *file, const char *tableName
     iterator->nameTypeBlock = tableOffsetBlock->nameTypeBlock;
     return iterator;
 }
-void reverseDataArray(struct recordId* array, size_t num_elements) {
+
+void reverseDataArray(struct recordId *array, size_t num_elements) {
     size_t start = 0;
     size_t end = num_elements - 1;
 
@@ -262,60 +263,84 @@ void reverseDataArray(struct recordId* array, size_t num_elements) {
     }
 }
 
-void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId* recordIdArray, uint8_t recordsNumber,
-        uint16_t positionToDelete, uint64_t deletedRecordLength) {
+void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId *recordIdArray, uint8_t recordsNumber,
+                             uint16_t positionToDelete, uint64_t deletedRecordLength) {
     for (uint16_t i = 0; i < recordsNumber - 1; i++) {
         if (i < (positionToDelete)) {
-            memcpy(&recordIdArray[i],  buffer + sizeof (struct headerSection) + BLOCK_DATA_SIZE - (i + 1) * sizeof (struct recordId), sizeof (struct recordId));
+            memcpy(&recordIdArray[i],
+                   buffer + sizeof(struct headerSection) + BLOCK_DATA_SIZE - (i + 1) * sizeof(struct recordId),
+                   sizeof(struct recordId));
         } else {
-            memcpy(&recordIdArray[i], buffer + sizeof (struct headerSection) + BLOCK_DATA_SIZE - (i + 2) * sizeof (struct recordId), sizeof (struct recordId));
+            memcpy(&recordIdArray[i],
+                   buffer + sizeof(struct headerSection) + BLOCK_DATA_SIZE - (i + 2) * sizeof(struct recordId),
+                   sizeof(struct recordId));
             recordIdArray[i].offset -= deletedRecordLength;
         }
     }
     reverseDataArray(recordIdArray, (recordsNumber - 1));
 }
 
-void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
-                           uint8_t predicateNumber) {
-    struct iterator* iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
-    unsigned char *buffer = malloc(BLOCK_SIZE);
+void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) {
     struct headerSection headerSection;
     struct specialDataSection specialDataSection;
     struct recordId recordId;
+    fseek(file, iterator->blockOffset, SEEK_SET);
+    fread(buffer, BLOCK_SIZE, 1, file);
+    memcpy(&headerSection, buffer, sizeof(struct headerSection));
+    memcpy(&specialDataSection, buffer + sizeof(struct headerSection) + BLOCK_DATA_SIZE,
+           sizeof(struct specialDataSection));
+    memcpy(&recordId, buffer + sizeof(struct headerSection) + BLOCK_DATA_SIZE -
+                      sizeof(struct recordId) * iterator->currentPositionInBlock, sizeof(struct recordId));
+    uint32_t bufferBeforeSize = recordId.offset;
+    unsigned char *bufferBefore = malloc(bufferBeforeSize);
+    memcpy(bufferBefore, buffer + sizeof(struct headerSection), recordId.offset);
+    struct recordId *recordIdArray = malloc(sizeof(struct recordId) * (headerSection.recordsNumber - 1));
+    rebuildArrayOfRecordIds(buffer, recordIdArray, headerSection.recordsNumber, iterator->currentPositionInBlock,
+                            recordId.length);
+    uint32_t bufferAfterSize = headerSection.endEmptySpaceOffset - (recordId.offset + recordId.length);
+    uint32_t bufferAfterStartOffset = sizeof(struct headerSection) + recordId.offset + recordId.length;
+    unsigned char *bufferAfter = malloc(bufferAfterSize);
+    memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
+    headerSection.recordsNumber--;
+    headerSection.startEmptySpaceOffset -= recordId.length;
+    headerSection.endEmptySpaceOffset += sizeof(struct recordId);
+    fseek(file, iterator->blockOffset, SEEK_SET);
+    fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+    fwrite(bufferBefore, bufferBeforeSize, 1, file);
+    fwrite(bufferAfter, bufferAfterSize, 1, file);
+    uint32_t recordIdsOffset = iterator->blockOffset + sizeof(struct headerSection) + BLOCK_DATA_SIZE -
+                               sizeof(struct recordId) * headerSection.recordsNumber;
+    fseek(file, recordIdsOffset, SEEK_SET);
+    fwrite(recordIdArray, sizeof(struct recordId) * headerSection.recordsNumber, 1, file);
+    fflush(file);
+    free(bufferBefore);
+    free(bufferAfter);
+    free(recordIdArray);
+}
+
+
+void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
+                           uint8_t predicateNumber) {
     uint64_t recordsNumber = 0;
+    struct iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
     while (hasNext(iterator, file)) recordsNumber++;
 
+    unsigned char *buffer = malloc(BLOCK_SIZE);
     for (uint64_t i = 0; i < recordsNumber; i++) {
         iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
         hasNext(iterator, file);
-        fseek(file, iterator->blockOffset, SEEK_SET);
-        fread(buffer, BLOCK_SIZE, 1, file);
-        memcpy(&headerSection, buffer, sizeof(struct headerSection));
-        memcpy(&specialDataSection, buffer + sizeof (struct headerSection) + BLOCK_DATA_SIZE, sizeof (struct specialDataSection));
-        memcpy(&recordId, buffer + sizeof (struct headerSection) + BLOCK_DATA_SIZE - sizeof (struct recordId) * iterator->currentPositionInBlock, sizeof (struct recordId));
-        uint32_t bufferBeforeSize = recordId.offset;
-        unsigned char *bufferBefore = malloc(bufferBeforeSize);
-        memcpy(bufferBefore, buffer + sizeof (struct headerSection), recordId.offset);
-        struct recordId* recordIdArray = malloc(sizeof (struct recordId) * (headerSection.recordsNumber - 1));
-        rebuildArrayOfRecordIds(buffer, recordIdArray, headerSection.recordsNumber, iterator->currentPositionInBlock, recordId.length);
-        uint32_t bufferAfterSize = headerSection.endEmptySpaceOffset - (recordId.offset + recordId.length);
-        uint32_t bufferAfterStartOffset = sizeof (struct headerSection) + recordId.offset + recordId.length;
-        unsigned char *bufferAfter = malloc(bufferAfterSize);
-        memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
-        headerSection.recordsNumber--;
-        headerSection.startEmptySpaceOffset -= recordId.length;
-        headerSection.endEmptySpaceOffset += sizeof (struct recordId);
-        fseek(file, iterator->blockOffset, SEEK_SET);
-        fwrite(&headerSection, sizeof (struct headerSection), 1, file);
-        fwrite(bufferBefore, bufferBeforeSize, 1, file);
-        fwrite(bufferAfter, bufferAfterSize, 1, file);
-        uint32_t recordIdsOffset = iterator->blockOffset + sizeof (struct headerSection) + BLOCK_DATA_SIZE - sizeof (struct recordId) * headerSection.recordsNumber;
-        fseek(file, recordIdsOffset, SEEK_SET);
-        fwrite(recordIdArray, sizeof (struct recordId) * headerSection.recordsNumber, 1, file);
-        fflush(file);
-        free(bufferBefore);
-        free(bufferAfter);
-        free(recordIdArray);
+        deleteRecord(file, iterator, buffer);
+    }
+    free(buffer);
+}
+
+void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
+                           uint8_t predicateNumber, struct EntityRecord *entityRecord) {
+    struct iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
+    unsigned char *buffer = malloc(BLOCK_SIZE);
+    if (hasNext(iterator, file)) {
+        deleteRecord(file, iterator, buffer);
+        insertRecordIntoTable(file, entityRecord, tableName);
     }
     free(buffer);
 }

@@ -38,4 +38,7 @@ void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *
 
 void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId* recordIdArray, uint8_t recordsNumber,
                              uint16_t positionToDelete, uint64_t deletedRecordLength);
+
+void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
+                           uint8_t predicateNumber, struct EntityRecord *entityRecord);
 #endif //LAB1_FILEAPI_H

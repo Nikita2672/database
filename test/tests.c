@@ -479,29 +479,12 @@ void test7() {
 }
 
 void test8() {
-    struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
-    struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
-    struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
-    struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
-    struct NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
-    // 1 table
-    struct NameTypeBlock nameTypeBlocks[5] = {
-            *nameTypeBlock1,
-            *nameTypeBlock2,
-            *nameTypeBlock3,
-            *nameTypeBlock4,
-            *nameTypeBlock5
-    };
     test1();
     test2();
     test5();
     test6();
     FILE *file = fopen(FILE_NAME, "rb+");
     struct iterator *iterator = readEntityRecordWithCondition(file, "User", NULL, 0);
-    while (hasNext(iterator, file)) {
-        struct EntityRecord *entityRecord = next(iterator, file);
-        printEntityRecord(entityRecord, 5, nameTypeBlocks);
-    }
     printf("\n");
     double score = 124.4;
     char * surname = "Kirillova";
@@ -522,5 +505,63 @@ void test8() {
         assertEqualsS(cutString((char *)entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), surnames[i],"surname", 8, i * 2 + 2);
         i++;
     }
+    assertEquals(i, 3, "recordsNUmber", 8, 12);
+    fclose(file);
+}
+
+// test update
+void test9() {
+    struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
+    struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
+    struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
+    struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
+    struct NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
+    struct NameTypeBlock nameTypeBlocks[5] = {
+            *nameTypeBlock1,
+            *nameTypeBlock2,
+            *nameTypeBlock3,
+            *nameTypeBlock4,
+            *nameTypeBlock5
+    };
+    test1();
+    test2();
+    test5();
+    test6();
+    FILE *file = fopen(FILE_NAME, "rb+");
+    struct iterator *iterator = readEntityRecordWithCondition(file, "User", NULL, 0);
+    while (hasNext(iterator, file)) {
+        struct EntityRecord *entityRecord = next(iterator, file);
+        printEntityRecord(entityRecord, 5, nameTypeBlocks);
+    }
+    printf("\n");
+    double score = 128;
+    struct FieldValue fieldValue = {&score, sizeof (score)};
+    struct predicate predicate[1] = {{&fieldValue, "Score", EQUALS}};
+
+    double score2 = 140;
+    char *name2 = "Nikita";
+    char *surname2 = "Pesterev";
+    bool sex2 = true;
+    int32_t age2 = 20;
+    struct FieldValue fieldValue21 = {name2, sizeof(char) * strlen(name2)};
+    struct FieldValue fieldValue22 = {surname2, sizeof(char) * strlen(surname2)};
+    struct FieldValue fieldValue23 = {&age2, sizeof(int32_t)};
+    struct FieldValue fieldValue24 = {&score2, sizeof(double)};
+    struct FieldValue fieldValue25 = {&sex2, sizeof(bool)};
+    struct FieldValue array2[5] = {fieldValue21, fieldValue22, fieldValue23, fieldValue24, fieldValue25};
+    struct EntityRecord entityRecord2 = {array2};
+    updateRecordFromTable(file, "User", predicate, 1, &entityRecord2);
+
+    struct FieldValue fieldValue1 = {name2, sizeof (char ) * strlen(name2)};
+    struct predicate predicate1[1] = {&fieldValue1, "Name", EQUALS};
+    struct iterator* iterator1 = readEntityRecordWithCondition(file, "User", predicate1, 1);
+    bool nextVal = hasNext(iterator1, file);
+    assertEquals(nextVal, true, "hasNext", 9, 1);
+    struct EntityRecord* entityRecord = next(iterator1, file);
+    assertEqualsS((char *) entityRecord->fields[0].data, "Nikita", "name", 9, 2);
+    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Pesterev", "surname", 9, 3);
+    assertEquals(*(uint16_t *) entityRecord->fields[2].data, 20, "age", 9, 4);
+    assertEquals(*(double *) entityRecord->fields[3].data, 140, "score", 9, 5);
+    assertEquals(*(bool *) entityRecord->fields[4].data, true, "sex", 9, 6);
     fclose(file);
 }

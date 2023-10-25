@@ -8,4 +8,5 @@ void test5();
 void test6();
 void test7();
 void test8();
+void test9();
 #endif //LAB1_TESTS_H
