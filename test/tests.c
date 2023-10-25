@@ -9,6 +9,7 @@
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 #define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/test/testInsert.bin"
+#define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
 
 void assertEquals(const double found, const double expected, char *fieldName, uint8_t testNumber, uint8_t position) {
     if (found != expected)
@@ -248,7 +249,7 @@ void test5() {
     char *surname2 = "Ivanov";
     bool sex2 = true;
     int32_t age2 = 20;
-    struct FieldValue fieldValue21 = {name2, sizeof(char) * strlen(name)};
+    struct FieldValue fieldValue21 = {name2, sizeof(char) * strlen(name2)};
     struct FieldValue fieldValue22 = {surname2, sizeof(char) * strlen(surname2)};
     struct FieldValue fieldValue23 = {&age2, sizeof(int32_t)};
     struct FieldValue fieldValue24 = {&score2, sizeof(double)};
@@ -258,11 +259,11 @@ void test5() {
     insertRecordIntoTable(file, &entityRecord2, "User");
 
     double score3 = 356;
-    char *name3 = "Lubov";
+    char *name3 = "Lubovv";
     char *surname3 = "Vitalievna";
     bool sex3 = false;
     int32_t age3 = 51;
-    struct FieldValue fieldValue31 = {name3, sizeof(char) * strlen(name)};
+    struct FieldValue fieldValue31 = {name3, sizeof(char) * strlen(name3)};
     struct FieldValue fieldValue32 = {surname3, sizeof(char) * strlen(surname3)};
     struct FieldValue fieldValue33 = {&age3, sizeof(int32_t)};
     struct FieldValue fieldValue34 = {&score3, sizeof(double)};
@@ -279,7 +280,7 @@ void test5() {
     assertEquals(isNext1, true, "hasNext", 5, 1);
     struct EntityRecord *entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 3);
-    assertEqualsS((char *) entityRecord1->fields[1].data, "Kirillova", "surname", 5, 4);
+    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova", "surname", 5, 4);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 6);
     assertEquals(*(double *) entityRecord1->fields[3].data, 123.3, "score", 5, 2);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 5);
@@ -296,8 +297,8 @@ void test5() {
     bool isNext3 = hasNext(iterator, file);
     assertEquals(isNext3, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
-    assertEqualsS((char *) entityRecord1->fields[0].data, "Lubov", "name", 5, 13);
-    assertEqualsS((char *) entityRecord1->fields[1].data, "Vitalievna", "surname", 5, 14);
+    assertEqualsS((char *) entityRecord1->fields[0].data, "Lubovv", "name", 5, 13);
+    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Vitalievna", "surname", 5, 14);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 51, "age", 5, 16);
     assertEquals(*(double *) entityRecord1->fields[3].data, 356, "score", 5, 12);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 15);
@@ -306,7 +307,7 @@ void test5() {
     assertEquals(isNext4, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 18);
-    assertEqualsS((char *) entityRecord1->fields[1].data, "Kirillova", "surname", 5, 19);
+    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova", "surname", 5, 19);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 21);
     assertEquals(*(double *) entityRecord1->fields[3].data, 124.3, "score", 5, 17);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 20);
@@ -315,7 +316,7 @@ void test5() {
     assertEquals(isNext5, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 23);
-    assertEqualsS((char *) entityRecord1->fields[1].data, "Kirillova", "surname", 5, 24);
+    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova", "surname", 5, 24);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 26);
     assertEquals(*(double *) entityRecord1->fields[3].data, 125.3, "score", 5, 22);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 25);
@@ -353,5 +354,155 @@ void test6() {
     assertEquals(nextVal1, true, "next", 6, 7);
     struct EntityRecord *pEntityRecord = next(iterator1, file);
     assertEqualsS(pEntityRecord->fields[0].data, "Nikita", "name", 6, 8);
+    fclose(file);
+}
+
+// deleteRecordTest
+void test7() {
+    // test rebuildArrayOfRecordIds function
+    FILE *file = fopen(FILE_NAME_2, "rb+");
+    struct recordId recordId1 = {0, 12};
+    struct recordId recordId2 = {12, 13};
+    struct recordId recordId3 = {25, 14};
+    struct recordId recordId4 = {39, 15};
+    struct recordId recordId5 = {54, 16};
+    struct recordId recordId6 = {70, 17};
+    struct recordId recordId7 = {87, 18};
+    struct recordId recordIds[7] = {recordId7, recordId6, recordId5, recordId4, recordId3, recordId2, recordId1};
+    struct headerSection headerSection = {0, 0, BLOCK_DATA_SIZE - sizeof(struct recordId) * 7, 7};
+    struct specialDataSection specialDataSection = {0, 0};
+    fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+    fflush(file);
+    fseek(file, sizeof(struct headerSection) + BLOCK_DATA_SIZE - sizeof(struct recordId) * 7, SEEK_SET);
+    fwrite(recordIds, sizeof(struct recordId) * 7, 1, file);
+    fflush(file);
+    fwrite(&specialDataSection, sizeof(struct specialDataSection), 1, file);
+    fflush(file);
+    unsigned char *buffer = malloc(sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection));
+    fseek(file, 0, SEEK_SET);
+    fread(buffer, sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection), 1, file);
+    struct recordId *resultIds = malloc(sizeof(struct recordId) * 7);
+    rebuildArrayOfRecordIds(buffer, resultIds, 7, 2, 14);
+    assertEquals(resultIds[0].offset, 73, "offset", 7, 1);
+    assertEquals(resultIds[0].length, 18, "length", 7, 2);
+    assertEquals(resultIds[1].offset, 56, "offset", 7, 3);
+    assertEquals(resultIds[1].length, 17, "length", 7, 4);
+    assertEquals(resultIds[2].offset, 40, "offset", 7, 5);
+    assertEquals(resultIds[2].length, 16, "length", 7, 6);
+    assertEquals(resultIds[3].offset, 25, "offset", 7, 7);
+    assertEquals(resultIds[3].length, 15, "length", 7, 8);
+    assertEquals(resultIds[4].offset, 12, "offset", 7, 9);
+    assertEquals(resultIds[4].length, 13, "length", 7, 10);
+    assertEquals(resultIds[5].offset, 0, "offset", 7, 11);
+    assertEquals(resultIds[5].length, 12, "length", 7, 12);
+    free(buffer);
+    free(resultIds);
+    fclose(file);
+
+    //test deleteRecordFromTable function
+    struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
+    struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
+    struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
+    struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
+    struct NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
+    // 1 table
+    struct NameTypeBlock nameTypeBlocks1[5] = {
+            *nameTypeBlock1,
+            *nameTypeBlock2,
+            *nameTypeBlock3,
+            *nameTypeBlock4,
+            *nameTypeBlock5
+    };
+
+    //delete 1 record
+    const char *name = "Nikita";
+    struct FieldValue fieldValue = {name, sizeof(char) * strlen(name)};
+    FILE *file1 = fopen(FILE_NAME, "rb+");
+    struct predicate predicate[1] = {&fieldValue, "Name", EQUALS};
+    struct iterator *iterator = readEntityRecordWithCondition(file1, "User", predicate, 1);
+    bool has = hasNext(iterator, file1);
+    assertEquals(has, true, "hasNext", 7, 13);
+    struct EntityRecord *entityRecord = next(iterator, file1);
+    assertEqualsS(entityRecord->fields[0].data, "Nikita", "name", 7, 14);
+    deleteRecordFromTable(file1, "User", predicate, 1);
+    struct iterator *iterator1 = readEntityRecordWithCondition(file1, "User", predicate, 1);
+    bool has1 = hasNext(iterator1, file1);
+    assertEquals(has1, false, "hasNext", 7, 15);
+    struct iterator *iterator2 = readEntityRecordWithCondition(file1, "User", NULL, 0);
+
+    double array[] = {123.3, 356, 124.3, 125.3};
+    uint8_t i = 0;
+    while (hasNext(iterator2, file1)) {
+        struct EntityRecord *entityRecord1 = next(iterator2, file1);
+        assertEquals(*(double *) entityRecord1->fields[3].data, array[i], "score", 7, 16 + i);
+        i++;
+    }
+    assertEquals(i, 4, "recordsNumber", 7, 21);
+    const char *name1 = "Ksenia";
+    struct FieldValue fieldValue1 = {name1, sizeof(char) * (strlen(name1) + 1)};
+    struct predicate predicate1[1] = {&fieldValue1, "Name", EQUALS};
+    struct iterator *iterator3 = readEntityRecordWithCondition(file1, "User", predicate1, 1);
+    bool has2 = hasNext(iterator3, file1);
+    assertEquals(has2, true, "hasNext", 7, 22);
+    struct EntityRecord *entityRecord1 = next(iterator3, file1);
+    assertEqualsS(entityRecord1->fields[0].data, "Ksenia", "surname", 7, 23);
+
+
+    //delete several records in 1 operation
+    // продолжить с этого теста
+    double score = 140.3;
+    struct FieldValue fieldValue2 = {&score, sizeof(double)};
+    struct predicate predicate2[1] = {&fieldValue2, "Score", LESS};
+    deleteRecordFromTable(file1, "User", predicate2, 1);
+    struct iterator *iterator4 = readEntityRecordWithCondition(file1, "User", NULL, 0);
+    score = 356;
+    i = 0;
+    while (hasNext(iterator4, file1)) {
+        struct EntityRecord *entityRecord2 = next(iterator4, file1);
+        assertEquals(*(double *) entityRecord2->fields[3].data, score, "score", 7, 24 + i);
+        i++;
+    }
+    assertEquals(i, 1, "recordsNumber", 7, 25);
+
+
+    fseek(file1, iterator->blockOffset, SEEK_SET);
+    fread(&headerSection, sizeof(struct headerSection), 1, file1);
+    assertEquals(headerSection.recordsNumber, 1, "recordsNumber", 7, 26);
+    assertEquals(headerSection.endEmptySpaceOffset, BLOCK_DATA_SIZE - sizeof(struct recordId), "endEmptySpaceOffset", 7,
+                 27);
+    assertEquals(headerSection.pageNumber, 0, "pageNumber", 7, 28);
+    struct recordId recordId;
+    fseek(file1, iterator->blockOffset + sizeof(struct headerSection) + BLOCK_DATA_SIZE - sizeof(struct recordId),
+          SEEK_SET);
+    fread(&recordId, sizeof(struct recordId), 1, file1);
+    assertEquals(recordId.offset, 0, "offset", 7, 29);
+    fclose(file1);
+}
+
+void test8() {
+    struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
+    struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
+    struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
+    struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
+    struct NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
+    // 1 table
+    struct NameTypeBlock nameTypeBlocks[5] = {
+            *nameTypeBlock1,
+            *nameTypeBlock2,
+            *nameTypeBlock3,
+            *nameTypeBlock4,
+            *nameTypeBlock5
+    };
+    test1();
+    test2();
+    test5();
+    test6();
+    FILE *file = fopen(FILE_NAME, "rb+");
+    struct iterator *iterator = readEntityRecordWithCondition(file, "User", NULL, 0);
+    while (hasNext(iterator, file)) {
+        struct EntityRecord *entityRecord = next(iterator, file);
+        printEntityRecord(entityRecord, 5, nameTypeBlocks);
+    }
+
     fclose(file);
 }

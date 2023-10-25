@@ -3,6 +3,7 @@
 //
 
 #include "util.h"
+#include "string.h"
 
 void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber, struct NameTypeBlock* nameTypeBlock) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
@@ -22,9 +23,24 @@ void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber,
                 }
                 break;
             default:
-                printf("%s; ", (char *) entityRecord->fields[i].data);
+                printf("%s; ", cutString((char *) entityRecord->fields[i].data, 0,  entityRecord->fields[i].dataSize));
                 break;
         }
     }
     printf("\n");
+}
+
+char* cutString(char* string, uint64_t start, uint64_t end) {
+    if (string == NULL || start >= end) {
+        return NULL;
+    }
+    size_t length = end - start;
+    char* newString = (char*)malloc(length + 1);
+
+    if (newString == NULL) {
+        return NULL;
+    }
+    strncpy(newString, string + start, length);
+    newString[length] = '\0';
+    return newString;
 }

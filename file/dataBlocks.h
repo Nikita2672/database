@@ -1,5 +1,6 @@
 #include "stdlib.h"
 #include "stdint.h"
+#include "stdbool.h"
 
 #define BLOCK_DATA_SIZE 8192
 #ifndef LAB1_DATABLOCKS_H
@@ -19,6 +20,6 @@ struct headerSection {
 
 struct recordId {
     uint16_t offset;
-    uint16_t length;
+    uint64_t length;
 };
 #endif //LAB1_DATABLOCKS_H

@@ -32,4 +32,10 @@ void insertRecordIntoTable(FILE* file, struct EntityRecord *entityRecord, const 
 
 struct iterator *readEntityRecordWithCondition(FILE* file, const char *tableName, struct predicate *predicate,
                                                uint8_t predicateNumber);
+
+void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
+                           uint8_t predicateNumber);
+
+void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId* recordIdArray, uint8_t recordsNumber,
+                             uint16_t positionToDelete, uint64_t deletedRecordLength);
 #endif //LAB1_FILEAPI_H
