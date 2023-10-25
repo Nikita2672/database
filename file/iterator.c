@@ -42,3 +42,5 @@ bool hasNext (struct iterator* iterator, FILE* file) {
 struct EntityRecord* next(struct iterator* iterator, FILE* file) {
     return readRecord(file, iterator->currentPositionInBlock - 1, iterator->blockOffset,iterator->fieldsNumber);
 }
+
+

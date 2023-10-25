@@ -449,7 +449,6 @@ void test7() {
 
 
     //delete several records in 1 operation
-    // продолжить с этого теста
     double score = 140.3;
     struct FieldValue fieldValue2 = {&score, sizeof(double)};
     struct predicate predicate2[1] = {&fieldValue2, "Score", LESS};
@@ -503,6 +502,25 @@ void test8() {
         struct EntityRecord *entityRecord = next(iterator, file);
         printEntityRecord(entityRecord, 5, nameTypeBlocks);
     }
+    printf("\n");
+    double score = 124.4;
+    char * surname = "Kirillova";
+    bool sex = false;
+    struct FieldValue fieldValue = {&score, sizeof(double)};
+    struct FieldValue fieldValue1 = {surname, sizeof (char ) * strlen(surname)};
+    struct FieldValue fieldValue2 = {&sex, sizeof (bool )};
+    struct predicate predicate[2] = {{&fieldValue, "Score", MORE},{&fieldValue2, "Sex", EQUALS}};
+    deleteRecordFromTable(file, "User", predicate, 2);
+    struct iterator *iterator1 = readEntityRecordWithCondition(file, "User", NULL, 0);
 
+    const char* surnames[3] = {"Kirillova", "Ivanov", "Kirillova"};
+    const double scores[3] = {123.3, 128, 124.3};
+    uint8_t i = 0;
+    while (hasNext(iterator1, file)) {
+        struct EntityRecord *entityRecord = next(iterator1, file);
+        assertEquals(*(double *)entityRecord->fields[3].data, scores[i],"score", 8, i * 2 + 1);
+        assertEqualsS(cutString((char *)entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), surnames[i],"surname", 8, i * 2 + 2);
+        i++;
+    }
     fclose(file);
 }
