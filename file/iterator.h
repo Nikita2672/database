@@ -18,6 +18,6 @@ struct iterator {
 };
 bool hasNext (struct iterator* iterator, FILE* file);
 struct EntityRecord* next(struct iterator* iterator, FILE * file);
-
-
+struct EntityRecord *nextWithJoin(struct iterator *iterator1, const char *tableName,
+                                  FILE *file, uint8_t fieldNumber, char *fieldName);
 #endif //LAB1_ITERATOR_H
