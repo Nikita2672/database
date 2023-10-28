@@ -41,4 +41,6 @@ void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId* recordIdArr
 
 void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
                            uint8_t predicateNumber, struct EntityRecord *entityRecord);
+
+struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName);
 #endif //LAB1_FILEAPI_H

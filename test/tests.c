@@ -280,7 +280,8 @@ void test5() {
     assertEquals(isNext1, true, "hasNext", 5, 1);
     struct EntityRecord *entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 3);
-    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova", "surname", 5, 4);
+    assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova",
+                  "surname", 5, 4);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 6);
     assertEquals(*(double *) entityRecord1->fields[3].data, 123.3, "score", 5, 2);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 5);
@@ -298,7 +299,8 @@ void test5() {
     assertEquals(isNext3, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Lubovv", "name", 5, 13);
-    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Vitalievna", "surname", 5, 14);
+    assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Vitalievna",
+                  "surname", 5, 14);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 51, "age", 5, 16);
     assertEquals(*(double *) entityRecord1->fields[3].data, 356, "score", 5, 12);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 15);
@@ -307,7 +309,8 @@ void test5() {
     assertEquals(isNext4, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 18);
-    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova", "surname", 5, 19);
+    assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova",
+                  "surname", 5, 19);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 21);
     assertEquals(*(double *) entityRecord1->fields[3].data, 124.3, "score", 5, 17);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 20);
@@ -316,7 +319,8 @@ void test5() {
     assertEquals(isNext5, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
     assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 23);
-    assertEqualsS(cutString ((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova", "surname", 5, 24);
+    assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova",
+                  "surname", 5, 24);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 26);
     assertEquals(*(double *) entityRecord1->fields[3].data, 125.3, "score", 5, 22);
     assertEquals(*(bool *) entityRecord1->fields[4].data, false, "sex", 5, 25);
@@ -487,22 +491,24 @@ void test8() {
     struct iterator *iterator = readEntityRecordWithCondition(file, "User", NULL, 0);
     printf("\n");
     double score = 124.4;
-    char * surname = "Kirillova";
+    char *surname = "Kirillova";
     bool sex = false;
     struct FieldValue fieldValue = {&score, sizeof(double)};
-    struct FieldValue fieldValue1 = {surname, sizeof (char ) * strlen(surname)};
-    struct FieldValue fieldValue2 = {&sex, sizeof (bool )};
-    struct predicate predicate[2] = {{&fieldValue, "Score", MORE},{&fieldValue2, "Sex", EQUALS}};
+    struct FieldValue fieldValue1 = {surname, sizeof(char) * strlen(surname)};
+    struct FieldValue fieldValue2 = {&sex, sizeof(bool)};
+    struct predicate predicate[2] = {{&fieldValue,  "Score", MORE},
+                                     {&fieldValue2, "Sex",   EQUALS}};
     deleteRecordFromTable(file, "User", predicate, 2);
     struct iterator *iterator1 = readEntityRecordWithCondition(file, "User", NULL, 0);
 
-    const char* surnames[3] = {"Kirillova", "Ivanov", "Kirillova"};
+    const char *surnames[3] = {"Kirillova", "Ivanov", "Kirillova"};
     const double scores[3] = {123.3, 128, 124.3};
     uint8_t i = 0;
     while (hasNext(iterator1, file)) {
         struct EntityRecord *entityRecord = next(iterator1, file);
-        assertEquals(*(double *)entityRecord->fields[3].data, scores[i],"score", 8, i * 2 + 1);
-        assertEqualsS(cutString((char *)entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), surnames[i],"surname", 8, i * 2 + 2);
+        assertEquals(*(double *) entityRecord->fields[3].data, scores[i], "score", 8, i * 2 + 1);
+        assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize),
+                      surnames[i], "surname", 8, i * 2 + 2);
         i++;
     }
     assertEquals(i, 3, "recordsNUmber", 8, 12);
@@ -529,13 +535,8 @@ void test9() {
     test6();
     FILE *file = fopen(FILE_NAME, "rb+");
     struct iterator *iterator = readEntityRecordWithCondition(file, "User", NULL, 0);
-    while (hasNext(iterator, file)) {
-        struct EntityRecord *entityRecord = next(iterator, file);
-        printEntityRecord(entityRecord, 5, nameTypeBlocks);
-    }
-    printf("\n");
     double score = 128;
-    struct FieldValue fieldValue = {&score, sizeof (score)};
+    struct FieldValue fieldValue = {&score, sizeof(score)};
     struct predicate predicate[1] = {{&fieldValue, "Score", EQUALS}};
 
     double score2 = 140;
@@ -552,16 +553,151 @@ void test9() {
     struct EntityRecord entityRecord2 = {array2};
     updateRecordFromTable(file, "User", predicate, 1, &entityRecord2);
 
-    struct FieldValue fieldValue1 = {name2, sizeof (char ) * strlen(name2)};
+    struct FieldValue fieldValue1 = {name2, sizeof(char) * strlen(name2)};
     struct predicate predicate1[1] = {&fieldValue1, "Name", EQUALS};
-    struct iterator* iterator1 = readEntityRecordWithCondition(file, "User", predicate1, 1);
+    struct iterator *iterator1 = readEntityRecordWithCondition(file, "User", predicate1, 1);
     bool nextVal = hasNext(iterator1, file);
     assertEquals(nextVal, true, "hasNext", 9, 1);
-    struct EntityRecord* entityRecord = next(iterator1, file);
+    struct EntityRecord *entityRecord = next(iterator1, file);
     assertEqualsS((char *) entityRecord->fields[0].data, "Nikita", "name", 9, 2);
-    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Pesterev", "surname", 9, 3);
+    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Pesterev",
+                  "surname", 9, 3);
     assertEquals(*(uint16_t *) entityRecord->fields[2].data, 20, "age", 9, 4);
     assertEquals(*(double *) entityRecord->fields[3].data, 140, "score", 9, 5);
     assertEquals(*(bool *) entityRecord->fields[4].data, true, "sex", 9, 6);
     fclose(file);
+}
+
+// test join
+void test10() {
+    FILE *file = fopen(FILE_NAME, "rb+");
+    struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
+    struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
+    struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
+    struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("DepartmentId", INT);
+    // 1 table
+    struct NameTypeBlock nameTypeBlocks1[4] = {
+            *nameTypeBlock1,
+            *nameTypeBlock2,
+            *nameTypeBlock3,
+            *nameTypeBlock4
+    };
+    struct tableOffsetBlock *writtenTableOffsetBlock1 = initTableOffsetBlock(file, "Employee", 4, nameTypeBlocks1);
+    writeTableOffsetBlock(file, writtenTableOffsetBlock1);
+
+    struct NameTypeBlock *nameTypeBlock21 = initNameTypeBlock("DepartmentId", INT);
+    struct NameTypeBlock *nameTypeBlock22 = initNameTypeBlock("Name", STRING);
+    struct NameTypeBlock *nameTypeBlock23 = initNameTypeBlock("Description", STRING);
+    // 2 table
+    struct NameTypeBlock nameTypeBlocks2[3] = {
+            *nameTypeBlock21,
+            *nameTypeBlock22,
+            *nameTypeBlock23
+    };
+
+    struct NameTypeBlock nameTypeBlocks3[7] = {
+            *nameTypeBlock1,
+            *nameTypeBlock2,
+            *nameTypeBlock3,
+            *nameTypeBlock4,
+            *nameTypeBlock21,
+            *nameTypeBlock22,
+            *nameTypeBlock23
+    };
+
+    struct tableOffsetBlock *writtenTableOffsetBlock2 = initTableOffsetBlock(file, "Department", 3, nameTypeBlocks2);
+    writeTableOffsetBlock(file, writtenTableOffsetBlock2);
+
+    char *name1 = "Nikita";
+    char *surname1 = "Ivanov";
+    int32_t age1 = 20;
+    int32_t departmentId1 = 1;
+    struct FieldValue fieldValue11 = {name1, sizeof(char) * strlen(name1)};
+    struct FieldValue fieldValue12 = {surname1, sizeof(char) * strlen(name1)};
+    struct FieldValue fieldValue13 = {&age1, sizeof(int32_t)};
+    struct FieldValue fieldValue14 = {&departmentId1, sizeof(int32_t)};
+    struct FieldValue array1[4] = {fieldValue11, fieldValue12, fieldValue13, fieldValue14};
+    struct EntityRecord entityRecord1 = {array1};
+    insertRecordIntoTable(file, &entityRecord1, "Employee");
+
+    char *name2 = "Ivan";
+    char *surname2 = "Bobrov";
+    int32_t age2 = 21;
+    int32_t departmentId2 = 2;
+    struct FieldValue fieldValue21 = {name2, sizeof(char) * strlen(name2)};
+    struct FieldValue fieldValue22 = {surname2, sizeof(char) * strlen(surname2)};
+    struct FieldValue fieldValue23 = {&age2, sizeof(int32_t)};
+    struct FieldValue fieldValue24 = {&departmentId2, sizeof(int32_t)};
+    struct FieldValue array2[4] = {fieldValue21, fieldValue22, fieldValue23, fieldValue24};
+    struct EntityRecord entityRecord2 = {array2};
+    insertRecordIntoTable(file, &entityRecord2, "Employee");
+
+    char *name3 = "Boris";
+    char *surname3 = "Kirillov";
+    int32_t age3 = 50;
+    int32_t departmentId3 = 3;
+    struct FieldValue fieldValue31 = {name3, sizeof(char) * strlen(name3)};
+    struct FieldValue fieldValue32 = {surname3, sizeof(char) * strlen(surname3)};
+    struct FieldValue fieldValue33 = {&age3, sizeof(int32_t)};
+    struct FieldValue fieldValue34 = {&departmentId3, sizeof(int32_t)};
+    struct FieldValue array3[4] = {fieldValue31, fieldValue32, fieldValue33, fieldValue34};
+    struct EntityRecord entityRecord3 = {array3};
+    insertRecordIntoTable(file, &entityRecord3, "Employee");
+
+
+    char *name4 = "Entropy";
+    char *description4 = "Command develop Accounting and Invoicing modules";
+    struct FieldValue fieldValue41 = {&departmentId1, sizeof(int32_t)};
+    struct FieldValue fieldValue42 = {name4, sizeof(char) * strlen(name4)};
+    struct FieldValue fieldValue43 = {description4, sizeof(char) * strlen(description4)};
+    struct FieldValue array4[3] = {fieldValue41, fieldValue42, fieldValue43};
+    struct EntityRecord entityRecord4 = {array4};
+    insertRecordIntoTable(file, &entityRecord4, "Department");
+
+    char *name5 = "QuantumTeam";
+    char *description5 = "Command develop loyality module";
+    struct FieldValue fieldValue51 = {&departmentId2, sizeof(int32_t)};
+    struct FieldValue fieldValue52 = {name5, sizeof(char) * strlen(name5)};
+    struct FieldValue fieldValue53 = {description5, sizeof(char) * strlen(description5)};
+    struct FieldValue array5[3] = {fieldValue51, fieldValue52, fieldValue53};
+    struct EntityRecord entityRecord5 = {array5};
+    insertRecordIntoTable(file, &entityRecord5, "Department");
+
+    char *name6 = "BACKOFFICE";
+    char *description6 = "Command develop backoffice module";
+    struct FieldValue fieldValue61 = {&departmentId3, sizeof(int32_t)};
+    struct FieldValue fieldValue62 = {name6, sizeof(char) * strlen(name6)};
+    struct FieldValue fieldValue63 = {description6, sizeof(char) * strlen(description6)};
+    struct FieldValue array6[3] = {fieldValue61, fieldValue62, fieldValue63};
+    struct EntityRecord entityRecord6 = {array6};
+    insertRecordIntoTable(file, &entityRecord6, "Department");
+
+    struct iterator *joinIterator = readEntityRecordWithCondition(file, "Employee", NULL, 0);
+    struct EntityRecord *entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
+    assertEqualsS((char *) entityRecord->fields[0].data, "Nikita", "Name", 10, 0);
+    assertEqualsS((char *) entityRecord->fields[1].data, "Ivanov", "Surname", 10, 1);
+    assertEquals(*(int32_t *) entityRecord->fields[2].data, 20, "Age", 10, 2);
+    assertEquals(*(int32_t *) entityRecord->fields[3].data, 1, "DepartmentId", 10, 3);
+    assertEquals(*(int32_t *) entityRecord->fields[4].data, 1, "DepartmentId", 10, 4);
+    assertEqualsS((char *) entityRecord->fields[5].data, "Entropy", "Name", 10, 5);
+    assertEqualsS((char *) entityRecord->fields[6].data, "Command develop Accounting and Invoicing modules", "Description", 10, 6);
+
+
+    entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
+    assertEqualsS(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Ivan", "Name", 10, 7);
+    assertEqualsS((char *) entityRecord->fields[1].data, "Bobrov", "Surname", 10, 8);
+    assertEquals(*(int32_t *) entityRecord->fields[2].data, 21, "Age", 10, 9);
+    assertEquals(*(int32_t *) entityRecord->fields[3].data, 2, "DepartmentId", 10, 10);
+    assertEquals(*(int32_t *) entityRecord->fields[4].data, 2, "DepartmentId", 10, 11);
+    assertEqualsS(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize), "QuantumTeam", "Name", 10, 12);
+    assertEqualsS((char *) entityRecord->fields[6].data, "Command develop loyality module", "Description", 10, 13);
+
+    entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
+    assertEqualsS(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Boris", "Name", 10, 14);
+    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Kirillov", "Surname", 10, 15);
+    assertEquals(*(int32_t *) entityRecord->fields[2].data, 50, "Age", 10, 16);
+    assertEquals(*(int32_t *) entityRecord->fields[3].data, 3, "DepartmentId", 10, 17);
+    assertEquals(*(int32_t *) entityRecord->fields[4].data, 3, "DepartmentId", 10, 18);
+    assertEqualsS(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize), "BACKOFFICE", "Name", 10, 19);
+    assertEqualsS((char *) entityRecord->fields[6].data, "Command develop backoffice module", "Description", 10, 20);
 }
