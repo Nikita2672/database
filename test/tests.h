@@ -10,4 +10,5 @@ void test7();
 void test8();
 void test9();
 void test10();
+void test11();
 #endif //LAB1_TESTS_H

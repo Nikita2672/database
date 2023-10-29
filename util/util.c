@@ -44,3 +44,9 @@ char* cutString(char* string, uint64_t start, uint64_t end) {
     newString[length] = '\0';
     return newString;
 }
+
+void printFileSize(FILE * file) {
+    fseek(file, 0, SEEK_END);
+    printf("\nfile size: %ld", ftell(file));
+    fseek(file, 0, SEEK_SET);
+}

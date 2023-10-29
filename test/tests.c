@@ -36,6 +36,7 @@ void test1() {
     writeEmptySpaceOffset(file, offset + 34);
     assertEquals(readEmptySpaceOffset(file), sizeof(struct defineTablesBlock) + 34, "EmptySpaceOffset", 1, 5);
     assertEquals(readTablesCount(file), 3, "table count", 1, 6);
+    printFileSize(file);
     fclose(file);
 }
 
@@ -48,6 +49,7 @@ void test2() {
     struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
     struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
     struct NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
+
     // 1 table
     struct NameTypeBlock nameTypeBlocks1[5] = {
             *nameTypeBlock1,
@@ -58,7 +60,7 @@ void test2() {
     };
     struct tableOffsetBlock *writtenTableOffsetBlock1 = initTableOffsetBlock(file, "User", 5, nameTypeBlocks1);
     writeTableOffsetBlock(file, writtenTableOffsetBlock1);
-    struct tableOffsetBlock *tableOffsetBlock1 = readTableOffsetBlock(file, 0);
+    struct tableOffsetBlock *tableOffsetBlock1 = readTableOffsetBlock(file, 1);
     assertEquals(tableOffsetBlock1->fieldsNumber, 5, "fieldsNumber", 2, 1);
     assertEqualsS(tableOffsetBlock1->tableName, "User", "tableName", 2, 2);
     assertEquals(tableOffsetBlock1->lastTableBLockOffset, sizeof(struct defineTablesBlock), "lastTableOffsetBlock", 2,
@@ -74,7 +76,7 @@ void test2() {
     };
     struct tableOffsetBlock *writtenTableOffsetBlock2 = initTableOffsetBlock(file, "Cake", 3, nameTypeBlocks2);
     writeTableOffsetBlock(file, writtenTableOffsetBlock2);
-    struct tableOffsetBlock *tableOffsetBlock2 = readTableOffsetBlock(file, 1);
+    struct tableOffsetBlock *tableOffsetBlock2 = readTableOffsetBlock(file, 2);
     assertEquals(tableOffsetBlock2->fieldsNumber, 3, "fieldsNumber", 2, 6);
     assertEqualsS(tableOffsetBlock2->tableName, "Cake", "tableName", 2, 7);
     uint64_t expectedOffset = sizeof(struct defineTablesBlock) + sizeof(struct headerSection) + BLOCK_DATA_SIZE +
@@ -84,7 +86,7 @@ void test2() {
     assertEqualsS(tableOffsetBlock2->nameTypeBlock[0].fieldName, "Surname", "Name 1 field", 2, 10);
 
     // check if table 2 overwritten table 1
-    struct tableOffsetBlock *tableOffsetBlock3 = readTableOffsetBlock(file, 0);
+    struct tableOffsetBlock *tableOffsetBlock3 = readTableOffsetBlock(file, 1);
     assertEquals(tableOffsetBlock3->fieldsNumber, 5, "fieldsNumber", 2, 11);
     assertEqualsS(tableOffsetBlock3->tableName, "User", "tableName", 2, 12);
     assertEquals(tableOffsetBlock3->lastTableBLockOffset, sizeof(struct defineTablesBlock), "lastTableOffsetBlock", 2,
@@ -361,9 +363,7 @@ void test6() {
     fclose(file);
 }
 
-// deleteRecordTest
-void test7() {
-    // test rebuildArrayOfRecordIds function
+void testRebuild() {
     FILE *file = fopen(FILE_NAME_2, "rb+");
     struct recordId recordId1 = {0, 12};
     struct recordId recordId2 = {12, 13};
@@ -402,7 +402,34 @@ void test7() {
     free(buffer);
     free(resultIds);
     fclose(file);
+}
 
+void testRebuild1() {
+    FILE *file = fopen(FILE_NAME_2, "rb+");
+    struct recordId recordId1 = {0, 21};
+    struct recordId recordIds[1] = {recordId1};
+    struct headerSection headerSection = {0, 0, BLOCK_DATA_SIZE - sizeof(struct recordId) * 1, 2};
+    struct specialDataSection specialDataSection = {0, 0};
+    fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+    fflush(file);
+    fseek(file, sizeof(struct headerSection) + BLOCK_DATA_SIZE - sizeof(struct recordId) * 1, SEEK_SET);
+    fwrite(recordIds, sizeof(struct recordId) * 1, 1, file);
+    fflush(file);
+    fwrite(&specialDataSection, sizeof(struct specialDataSection), 1, file);
+    fflush(file);
+    unsigned char *buffer = malloc(sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection));
+    fseek(file, 0, SEEK_SET);
+    fread(buffer, sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection), 1, file);
+    struct recordId *resultIds = malloc(sizeof(struct recordId) * 1);
+    rebuildArrayOfRecordIds(buffer, resultIds, 1, 0, 21);
+}
+
+// deleteRecordTest
+void test7() {
+    // test rebuildArrayOfRecordIds function
+    testRebuild();
+    testRebuild1();
+    struct headerSection headerSection = {0, 0, BLOCK_DATA_SIZE - sizeof(struct recordId) * 7, 7};
     //test deleteRecordFromTable function
     struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
     struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
@@ -700,4 +727,36 @@ void test10() {
     assertEquals(*(int32_t *) entityRecord->fields[4].data, 3, "DepartmentId", 10, 18);
     assertEqualsS(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize), "BACKOFFICE", "Name", 10, 19);
     assertEqualsS((char *) entityRecord->fields[6].data, "Command develop backoffice module", "Description", 10, 20);
+
+    fclose(file);
+}
+
+// check memory in file
+void test11() {
+    FILE* file = fopen(FILE_NAME, "rb+");
+    printFileSize(file);
+    deleteTable("User", file);
+    printFileSize(file);
+    struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
+    struct NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
+    struct NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
+    struct NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
+    struct NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
+
+    // 1 table
+    struct NameTypeBlock nameTypeBlocks1[5] = {
+            *nameTypeBlock1,
+            *nameTypeBlock2,
+            *nameTypeBlock3,
+            *nameTypeBlock4,
+            *nameTypeBlock5
+    };
+    for (uint16_t i = 0; i < 1000; i++) {
+        struct tableOffsetBlock *writtenTableOffsetBlock1 = initTableOffsetBlock(file, "Users1", 5, nameTypeBlocks1);
+        writeTableOffsetBlock(file, writtenTableOffsetBlock1);
+        deleteTable("Users1", file);
+        printFileSize(file);
+    }
+
+    fclose(file);
 }

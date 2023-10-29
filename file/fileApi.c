@@ -7,8 +7,12 @@
 #include "../query/query.h"
 #include "fileApi.h"
 #include "iterator.h"
+#include <inttypes.h>
+
 
 #define BLOCK_SIZE sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection)
+// Размер буфера для того чтобы поместилось число типа uint64_t как строка 20-знаков + нуль терминатор
+#define BUFFER_SIZE 21
 
 void writeEmptyTablesBlock(FILE *file) {
     struct defineTablesBlock *data = malloc(sizeof(struct defineTablesBlock));
@@ -18,7 +22,9 @@ void writeEmptyTablesBlock(FILE *file) {
     }
     data->countTables = 0;
     data->emptySpaceOffset = sizeof(struct defineTablesBlock);
+    fseek(file, 0, SEEK_SET);
     fwrite(data, sizeof(struct defineTablesBlock), 1, file);
+    optimiseSpaceInFile(file);
     free(data);
 }
 
@@ -198,6 +204,20 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
     return NULL;
 }
 
+void deleteTableOffsetBlock(FILE* file, const char *tableName) {
+    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
+    fseek(file, sizeof(uint32_t), SEEK_SET);
+    for (uint16_t i = 0; i < MAX_TABLES; i++) {
+        fread(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
+        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
+            tableOffsetBlock->isActive = false;
+            fseek(file, -sizeof (struct tableOffsetBlock), SEEK_CUR);
+            fwrite(tableOffsetBlock, sizeof (struct tableOffsetBlock), 1, file);
+            break;
+        }
+    }
+}
+
 //struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName) {
 //    unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
 //    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
@@ -251,8 +271,8 @@ struct iterator *readEntityRecordWithCondition(FILE *file, const char *tableName
 }
 
 void reverseDataArray(struct recordId *array, size_t num_elements) {
-    size_t start = 0;
-    size_t end = num_elements - 1;
+    uint16_t start = 0;
+    int16_t end = num_elements - 1;
 
     while (start < end) {
         struct recordId temp = array[start];
@@ -343,4 +363,30 @@ void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *
         insertRecordIntoTable(file, entityRecord, tableName);
     }
     free(buffer);
+}
+
+void optimiseSpaceInFile(FILE* file) {
+    struct NameTypeBlock *nameTypeBlock = initNameTypeBlock("Offset", STRING);
+    struct tableOffsetBlock *writtenTableMetaData = initTableOffsetBlock(file, "Meta", 1, nameTypeBlock);
+    writeTableOffsetBlock(file, writtenTableMetaData);
+}
+
+void deleteTable(const char *tableName, FILE* file) {
+    struct tableOffsetBlock* tableOffsetBlock = findTableOffsetBlock(file, tableName);
+    uint64_t offset = tableOffsetBlock->firsTableBlockOffset;
+    struct specialDataSection specialDataSection;
+    struct EntityRecord entityRecord;
+    struct FieldValue fieldValue;
+    while (offset != 0) {
+        fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+        fread(&specialDataSection, sizeof (struct specialDataSection), 1, file);
+        char buffer[BUFFER_SIZE];
+        snprintf(buffer, sizeof(char ) * BUFFER_SIZE, "%" PRIu64, offset);
+        fieldValue.data = &buffer;
+        fieldValue.dataSize = sizeof (char )* BUFFER_SIZE;
+        entityRecord.fields = &fieldValue;
+        insertRecordIntoTable(file, &entityRecord, "Meta");
+        offset = specialDataSection.nextBlockOffset;
+    }
+    deleteTableOffsetBlock(file, tableName);
 }

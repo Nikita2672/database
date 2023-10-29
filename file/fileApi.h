@@ -43,4 +43,7 @@ void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *
                            uint8_t predicateNumber, struct EntityRecord *entityRecord);
 
 struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName);
+void optimiseSpaceInFile(FILE* file);
+
+void deleteTable(const char *tableName, FILE* file);
 #endif //LAB1_FILEAPI_H
