@@ -20,14 +20,16 @@ uint64_t allocateBlock(FILE *file, uint64_t previousOffset, uint64_t pageNumber)
             struct FieldValue fieldValue = {buffer, sizeof (char ) * 21};
             struct predicate predicate = {&fieldValue, "Offset", EQUALS};
             deleteRecordFromTable(file, "Meta", &predicate, 1);
-            printf("\nEmptySpaceOffset %lu", emptySpaceOffset);
         }
     }
     if (emptySpaceOffset == 0) {
         fseek(file, sizeof(struct defineTablesBlock) - sizeof(uint64_t), SEEK_SET);
         fread(&emptySpaceOffset, sizeof(uint64_t), 1, file);
+        uint64_t resultOffset = emptySpaceOffset + (sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection));
+        fseek(file, sizeof(struct defineTablesBlock) - sizeof(uint64_t), SEEK_SET);
+        fwrite(&resultOffset, sizeof(uint64_t), 1, file);
+        printf("\nEmptySpace offset: %lu\n", resultOffset);
     }
-    printf("\n%lu", emptySpaceOffset);
     uint64_t resultOffset = emptySpaceOffset;
     fseek(file, emptySpaceOffset, SEEK_SET);
     struct headerSection headerSection;
@@ -41,8 +43,5 @@ uint64_t allocateBlock(FILE *file, uint64_t previousOffset, uint64_t pageNumber)
     fwrite(&headerSection, sizeof(struct headerSection), 1, file);
     fseek(file, BLOCK_DATA_SIZE, SEEK_CUR);
     fwrite(&specialDataSection, sizeof(struct specialDataSection), 1, file);
-    fseek(file, sizeof(struct defineTablesBlock) - sizeof(uint64_t), SEEK_SET);
-    emptySpaceOffset += (sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection));
-    fwrite(&emptySpaceOffset, sizeof(uint64_t), 1, file);
     return resultOffset;
 }

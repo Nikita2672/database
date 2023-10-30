@@ -47,10 +47,10 @@ void writeTableCount(FILE *file, uint32_t tablesCount) {
 }
 
 uint64_t readEmptySpaceOffset(FILE *file) {
-    uint64_t tableCount;
+    uint64_t emptyOffset;
     fseek(file, (sizeof(struct defineTablesBlock) - sizeof(uint64_t)), SEEK_SET);
-    fread(&tableCount, sizeof(uint64_t), 1, file);
-    return tableCount;
+    fread(&emptyOffset, sizeof(uint64_t), 1, file);
+    return emptyOffset;
 }
 
 void writeEmptySpaceOffset(FILE *file, uint64_t offset) {
@@ -80,6 +80,10 @@ uint64_t findOffsetForTableOffsetBlock(FILE *file) {
         memcpy(&tableOffsetBlock, buffer + offset, sizeof(struct tableOffsetBlock));
         if (!(tableOffsetBlock.isActive)) {
             free(buffer);
+            fseek(file, 0, SEEK_SET);
+            uint32_t tableCount = readTablesCount(file);
+            tableCount++;
+            writeTableCount(file, tableCount);
             return offset + sizeof(uint32_t);
         }
     }
@@ -213,6 +217,9 @@ void deleteTableOffsetBlock(FILE* file, const char *tableName) {
             tableOffsetBlock->isActive = false;
             fseek(file, -sizeof (struct tableOffsetBlock), SEEK_CUR);
             fwrite(tableOffsetBlock, sizeof (struct tableOffsetBlock), 1, file);
+            uint32_t tableCount = readTablesCount(file);
+            tableCount--;
+            writeTableCount(file, tableCount);
             break;
         }
     }
