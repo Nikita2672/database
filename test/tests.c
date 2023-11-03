@@ -28,6 +28,7 @@ void assertEqualsS(const char *found, const char *expected, char *fieldName, uin
 }
 
 // Тест проверяет запись в файл отступа и количества таблиц
+// Проверено
 void test1() {
     FILE *file = fopen(FILE_NAME, "rb+");
     writeEmptyTablesBlock(file);
@@ -36,12 +37,11 @@ void test1() {
     writeTableCount(file, 3);
     assertEquals(readEmptySpaceOffset(file), sizeof(struct defineTablesBlock) + BLOCK_SPACE, "EmptySpaceOffset", 1, 3);
     assertEquals(readTablesCount(file), 3, "table count", 1, 4);
-    uint64_t offset = readEmptySpaceOffset(file);
     assertEquals(readTablesCount(file), 3, "table count", 1, 6);
     fclose(file);
 }
 
-
+// Проверено
 void test2() {
     FILE *file = fopen(FILE_NAME, "rb+");
     struct NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
@@ -61,16 +61,16 @@ void test2() {
     struct tableOffsetBlock *writtenTableOffsetBlock1 = initTableOffsetBlock(file, "User", 5, nameTypeBlocks1);
     writeTableOffsetBlock(file, writtenTableOffsetBlock1);
     struct tableOffsetBlock *tableOffsetBlock1 = readTableOffsetBlock(file, 1);
+
     assertEquals(tableOffsetBlock1->fieldsNumber, 5, "fieldsNumber", 2, 1);
     assertEqualsS(tableOffsetBlock1->tableName, "User", "tableName", 2, 2);
     assertEquals(tableOffsetBlock1->lastTableBLockOffset, sizeof(struct defineTablesBlock) + BLOCK_SPACE,
-                 "lastTableOffsetBlock", 2,
-                 3);
+                 "lastTableOffsetBlock", 2, 3);
     assertEquals(tableOffsetBlock1->firsTableBlockOffset, sizeof(struct defineTablesBlock) + BLOCK_SPACE,
-                 "firstTableOffsetBlock", 2,
-                 4);
+                 "firstTableOffsetBlock", 2, 4);
     assertEqualsS(tableOffsetBlock1->nameTypeBlock[0].fieldName, "Name", "Name 1 field", 2, 5);
-    // 2 table
+
+    // 2 tables
     struct NameTypeBlock nameTypeBlocks2[3] = {
             *nameTypeBlock2,
             *nameTypeBlock3,
@@ -79,6 +79,7 @@ void test2() {
     struct tableOffsetBlock *writtenTableOffsetBlock2 = initTableOffsetBlock(file, "Cake", 3, nameTypeBlocks2);
     writeTableOffsetBlock(file, writtenTableOffsetBlock2);
     struct tableOffsetBlock *tableOffsetBlock2 = readTableOffsetBlock(file, 2);
+
     assertEquals(tableOffsetBlock2->fieldsNumber, 3, "fieldsNumber", 2, 6);
     assertEqualsS(tableOffsetBlock2->tableName, "Cake", "tableName", 2, 7);
     uint64_t expectedOffset = sizeof(struct defineTablesBlock) + sizeof(struct headerSection) + BLOCK_DATA_SIZE +
@@ -89,26 +90,28 @@ void test2() {
 
     // check if table 2 overwritten table 1
     struct tableOffsetBlock *tableOffsetBlock3 = readTableOffsetBlock(file, 1);
+
     assertEquals(tableOffsetBlock3->fieldsNumber, 5, "fieldsNumber", 2, 11);
     assertEqualsS(tableOffsetBlock3->tableName, "User", "tableName", 2, 12);
     assertEquals(tableOffsetBlock3->lastTableBLockOffset, sizeof(struct defineTablesBlock) + BLOCK_SPACE,
-                 "lastTableOffsetBlock", 2,
-                 13);
+                 "lastTableOffsetBlock", 2, 13);
     assertEquals(tableOffsetBlock3->firsTableBlockOffset, sizeof(struct defineTablesBlock) + BLOCK_SPACE,
-                 "firstTableOffsetBlock", 2,
-                 14);
+                 "firstTableOffsetBlock", 2, 14);
     assertEqualsS(tableOffsetBlock3->nameTypeBlock[0].fieldName, "Name", "Name 1 field", 2, 15);
 
-    free(tableOffsetBlock1);
-    free(tableOffsetBlock2);
-    free(tableOffsetBlock3);
-    free(writtenTableOffsetBlock1);
-    free(writtenTableOffsetBlock2);
     free(nameTypeBlock1);
     free(nameTypeBlock2);
     free(nameTypeBlock3);
     free(nameTypeBlock4);
     free(nameTypeBlock5);
+
+    free(writtenTableOffsetBlock1);
+    free(writtenTableOffsetBlock2);
+
+    free(tableOffsetBlock1);
+    free(tableOffsetBlock2);
+    free(tableOffsetBlock3);
+
     fclose(file);
 }
 
@@ -775,7 +778,61 @@ void test11() {
     assertEquals(readTablesCount(file), tableCount + tablesToInsert, "tableCount", 11, 3);
     assertEquals(readEmptySpaceOffset(file), offset + (BLOCK_SPACE) * (tablesToInsert - 1), "offset", 11, 4);
     offset = readEmptySpaceOffset(file);
-    ftruncate(fileno(file), offset+1);
+    ftruncate(fileno(file), offset + 1);
     printf("\nfileSize: %lu", getFileSize(file));
     fclose(file);
+}
+
+
+void test12() {
+
+    struct NameTypeBlock nameTypeBlocks[4] = {{"Age",         INT},
+                                              {"Sex",         BOOL},
+                                              {"Description", STRING},
+                                              {"Score",       DOUBLE}};
+    printf("\n");
+    for (uint16_t i = 50; i < 100; i++) {
+        struct EntityRecord *entityRecordTest = malloc(sizeof(struct EntityRecord));
+
+        int32_t *ageTest = malloc(sizeof(int32_t));
+        *ageTest = 32;
+
+        bool *sexTest = malloc(sizeof(bool));
+        *sexTest = false;
+
+        char *descriptionTest = malloc(sizeof(char) *
+                                       strlen("Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)"));
+        strncpy(descriptionTest, "Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)", sizeof (char ) *
+                strlen("Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)"));
+
+        double *scoreTest = malloc(sizeof(double));
+        *scoreTest = 123.324;
+
+        struct FieldValue *fieldValueTest = malloc(sizeof(struct FieldValue) * 4);
+
+        fieldValueTest[0].data = ageTest;
+        fieldValueTest[0].dataSize = sizeof(int32_t);
+        fieldValueTest[1].data = sexTest;
+        fieldValueTest[1].dataSize = sizeof(bool);
+        fieldValueTest[2].data = descriptionTest;
+        fieldValueTest[2].dataSize = (sizeof(char) * strlen(descriptionTest));
+        fieldValueTest[3].data = scoreTest;
+        fieldValueTest[3].dataSize = sizeof(double);
+
+        entityRecordTest->fields = fieldValueTest;
+
+        struct EntityRecord **entities = separateEntityRecord(entityRecordTest, i, 4, nameTypeBlocks);
+        struct EntityRecord *entityRecordCompound = compoundEntityRecords(entities[0], entities[1], 4);
+        assertEquals(*(int32_t *) entityRecordCompound->fields[0].data, *ageTest, "age", 12,4 * i);
+        assertEquals(*(bool *) entityRecordCompound->fields[1].data, false, "sexTest", 12, 4 * i + 1);
+        assertEqualsS(cutString((char *) entityRecordCompound->fields[2].data, 0, entityRecordCompound->fields[2].dataSize), descriptionTest, "descriptionTest", 12,4 * i + 2);
+        assertEquals(*(double *) entityRecordCompound->fields[3].data, 123.324, "scoreTest", 12, 4 * i + 3);
+        if (entityRecordCompound->fields[0].data != NULL) free(entityRecordCompound->fields[0].data);
+        if (entityRecordCompound->fields[1].data != NULL) free(entityRecordCompound->fields[1].data);
+        if (entityRecordCompound->fields[2].data != NULL) free(entityRecordCompound->fields[2].data);
+        if (entityRecordCompound->fields[3].data != NULL) free(entityRecordCompound->fields[3].data);
+        free(entityRecordCompound->fields);
+        free(entityRecordCompound);
+        free(entities);
+    }
 }

@@ -46,4 +46,13 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
 void optimiseSpaceInFile(FILE* file);
 
 void deleteTable(const char *tableName, FILE* file);
+
+struct FieldValue **separateString(struct FieldValue *fieldValue, uint32_t capacity);
+
+struct FieldValue* concatenateFieldValues(struct FieldValue *fieldValue1, struct FieldValue *fieldValue2);
+
+struct EntityRecord **separateEntityRecord(struct EntityRecord *entityRecord, int64_t capacity,
+                                           uint8_t fieldsNumber, struct NameTypeBlock* nameTypeBlock);
+
+struct EntityRecord* compoundEntityRecords(struct EntityRecord* entityRecord1, struct EntityRecord* entityRecord2, uint8_t fieldsNumber);
 #endif //LAB1_FILEAPI_H

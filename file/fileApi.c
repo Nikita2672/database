@@ -14,6 +14,7 @@
 // Размер буфера для того чтобы поместилось число типа uint64_t как строка 20-знаков + нуль терминатор
 #define BUFFER_SIZE 21
 
+// checked
 void writeEmptyTablesBlock(FILE *file) {
     struct defineTablesBlock *data = malloc(sizeof(struct defineTablesBlock));
     if (data == NULL) {
@@ -26,12 +27,6 @@ void writeEmptyTablesBlock(FILE *file) {
     fwrite(data, sizeof(struct defineTablesBlock), 1, file);
     optimiseSpaceInFile(file);
     free(data);
-}
-
-struct defineTablesBlock *readTablesBlock(FILE *file) {
-    struct defineTablesBlock *defineTablesBlock = malloc(sizeof(struct defineTablesBlock));
-    fread(defineTablesBlock, sizeof(struct defineTablesBlock), 1, file);
-    return defineTablesBlock;
 }
 
 uint32_t readTablesCount(FILE *file) {
@@ -59,6 +54,7 @@ void writeEmptySpaceOffset(FILE *file, uint64_t offset) {
     fwrite(&emptySpaceOffset, sizeof(uint64_t), 1, file);
 }
 
+// Проверено
 struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition) {
     if (tablePosition > 1000) {
         printf("Your table number is too big");
@@ -74,11 +70,11 @@ uint64_t findOffsetForTableOffsetBlock(FILE *file) {
     unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
     fseek(file, sizeof(uint32_t), SEEK_SET);
     fread(buffer, sizeof(struct tableOffsetBlock) * MAX_TABLES, 1, file);
-    struct tableOffsetBlock tableOffsetBlock;
+    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof (struct tableOffsetBlock));
     for (uint64_t i = 0; i < MAX_TABLES; i++) {
         uint64_t offset = (sizeof(struct tableOffsetBlock) * i);
-        memcpy(&tableOffsetBlock, buffer + offset, sizeof(struct tableOffsetBlock));
-        if (!(tableOffsetBlock.isActive)) {
+        memcpy(tableOffsetBlock, buffer + offset, sizeof(struct tableOffsetBlock));
+        if (!(tableOffsetBlock->isActive)) {
             free(buffer);
             fseek(file, 0, SEEK_SET);
             uint32_t tableCount = readTablesCount(file);
@@ -87,6 +83,7 @@ uint64_t findOffsetForTableOffsetBlock(FILE *file) {
             return offset + sizeof(uint32_t);
         }
     }
+    free(tableOffsetBlock);
     free(buffer);
     return 0;
 }
@@ -95,14 +92,6 @@ void writeTableOffsetBlock(FILE *file, struct tableOffsetBlock *tableOffsetBlock
     uint64_t offset = findOffsetForTableOffsetBlock(file);
     fseek(file, offset, SEEK_SET);
     fwrite(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
-}
-
-void writeDataBlock(uint64_t offset, FILE *file, struct headerSection *headerSection,
-                    struct specialDataSection *specialDataSection) {
-    fseek(file, offset, SEEK_SET);
-    fwrite(headerSection, sizeof(struct headerSection), 1, file);
-    fseek(file, BLOCK_DATA_SIZE, SEEK_CUR);
-    fwrite(specialDataSection, sizeof(struct specialDataSection), 1, file);
 }
 
 uint64_t countNeededSpace(struct EntityRecord *entityRecord, uint8_t fieldsNumber) {
@@ -208,41 +197,23 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
     return NULL;
 }
 
-void deleteTableOffsetBlock(FILE* file, const char *tableName) {
+void deleteTableOffsetBlock(FILE *file, const char *tableName) {
     struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
     fseek(file, sizeof(uint32_t), SEEK_SET);
     for (uint16_t i = 0; i < MAX_TABLES; i++) {
         fread(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
         if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
             tableOffsetBlock->isActive = false;
-            fseek(file, -sizeof (struct tableOffsetBlock), SEEK_CUR);
-            fwrite(tableOffsetBlock, sizeof (struct tableOffsetBlock), 1, file);
+            fseek(file, -sizeof(struct tableOffsetBlock), SEEK_CUR);
+            fwrite(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
             uint32_t tableCount = readTablesCount(file);
             tableCount--;
             writeTableCount(file, tableCount);
             break;
         }
     }
+    free(tableOffsetBlock);
 }
-
-//struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName) {
-//    unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
-//    struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
-//    fseek(file, sizeof(uint32_t), SEEK_SET);
-//    fread(buffer, sizeof(struct tableOffsetBlock) * MAX_TABLES, 1, file);
-//    for (uint16_t i = 0; i < MAX_TABLES; i++) {
-//        uint64_t offset = sizeof(struct tableOffsetBlock) * i;
-//        memcpy(tableOffsetBlock, buffer + offset, sizeof (struct tableOffsetBlock));
-//        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
-//            //проблема
-//            free(buffer);
-//            return tableOffsetBlock;
-//        }
-//    }
-//    free(buffer);
-//    free(tableOffsetBlock);
-//    return NULL;
-//}
 
 void insertRecordIntoTable(FILE *file, struct EntityRecord *entityRecord, const char *tableName) {
     struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
@@ -267,13 +238,15 @@ struct iterator *readEntityRecordWithCondition(FILE *file, const char *tableName
         return NULL;
     }
     struct iterator *iterator = malloc(sizeof(struct iterator));
-
+    struct NameTypeBlock *nameTypeBlocks = malloc(sizeof (struct NameTypeBlock) * MAX_FIELDS);
+    iterator->nameTypeBlock = nameTypeBlocks;
     iterator->predicate = predicate;
     iterator->predicateNumber = predicateNumber;
     iterator->blockOffset = tableOffsetBlock->firsTableBlockOffset;
     iterator->currentPositionInBlock = 0;
     iterator->fieldsNumber = tableOffsetBlock->fieldsNumber;
-    iterator->nameTypeBlock = tableOffsetBlock->nameTypeBlock;
+    memcpy(iterator->nameTypeBlock, tableOffsetBlock->nameTypeBlock, sizeof (struct NameTypeBlock) * MAX_FIELDS);
+    free(tableOffsetBlock);
     return iterator;
 }
 
@@ -307,6 +280,7 @@ void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId *recordIdArr
     reverseDataArray(recordIdArray, (recordsNumber - 1));
 }
 
+// checked
 void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) {
     struct headerSection headerSection;
     struct specialDataSection specialDataSection;
@@ -345,7 +319,7 @@ void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) 
     free(recordIdArray);
 }
 
-
+// checked
 void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
                            uint8_t predicateNumber) {
     uint64_t recordsNumber = 0;
@@ -361,6 +335,7 @@ void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *
     free(buffer);
 }
 
+//checked
 void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
                            uint8_t predicateNumber, struct EntityRecord *entityRecord) {
     struct iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
@@ -372,28 +347,161 @@ void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *
     free(buffer);
 }
 
-void optimiseSpaceInFile(FILE* file) {
+void optimiseSpaceInFile(FILE *file) {
     struct NameTypeBlock *nameTypeBlock = initNameTypeBlock("Offset", STRING);
     struct tableOffsetBlock *writtenTableMetaData = initTableOffsetBlock(file, "Meta", 1, nameTypeBlock);
     writeTableOffsetBlock(file, writtenTableMetaData);
 }
 
-void deleteTable(const char *tableName, FILE* file) {
-    struct tableOffsetBlock* tableOffsetBlock = findTableOffsetBlock(file, tableName);
+void deleteTable(const char *tableName, FILE *file) {
+    struct tableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
     uint64_t offset = tableOffsetBlock->firsTableBlockOffset;
     struct specialDataSection specialDataSection;
     struct EntityRecord entityRecord;
     struct FieldValue fieldValue;
     while (offset != 0) {
-        fseek(file, offset + sizeof (struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
-        fread(&specialDataSection, sizeof (struct specialDataSection), 1, file);
+        fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+        fread(&specialDataSection, sizeof(struct specialDataSection), 1, file);
         char buffer[BUFFER_SIZE];
-        snprintf(buffer, sizeof(char ) * BUFFER_SIZE, "%" PRIu64, offset);
+        snprintf(buffer, sizeof(char) * BUFFER_SIZE, "%" PRIu64, offset);
         fieldValue.data = &buffer;
-        fieldValue.dataSize = sizeof (char )* BUFFER_SIZE;
+        fieldValue.dataSize = sizeof(char) * BUFFER_SIZE;
         entityRecord.fields = &fieldValue;
         insertRecordIntoTable(file, &entityRecord, "Meta");
         offset = specialDataSection.nextBlockOffset;
     }
     deleteTableOffsetBlock(file, tableName);
+}
+
+struct FieldValue **separateString(struct FieldValue *fieldValue, uint32_t capacity) {
+    unsigned char *buffer1 = malloc(capacity);
+    struct FieldValue *fieldValue1 = malloc(sizeof(struct FieldValue));
+    fieldValue1->dataSize = capacity;
+    memcpy(buffer1, fieldValue->data, capacity);
+    fieldValue1->data = buffer1;
+
+    unsigned char *buffer2 = malloc(fieldValue->dataSize - capacity);
+    struct FieldValue *fieldValue2 = malloc(sizeof(struct FieldValue));
+    fieldValue2->dataSize = fieldValue->dataSize - capacity;
+    memcpy(buffer2, fieldValue->data + capacity, (fieldValue->dataSize - capacity));
+    fieldValue2->data = buffer2;
+
+    struct FieldValue **fieldValues = (struct FieldValue **) malloc(2 * sizeof(struct FieldValue *));
+    fieldValues[0] = fieldValue1;
+    fieldValues[1] = fieldValue2;
+    return fieldValues;
+}
+
+struct FieldValue *concatenateFieldValues(struct FieldValue *fieldValue1, struct FieldValue *fieldValue2) {
+    unsigned char *buffer = malloc(fieldValue1->dataSize + fieldValue2->dataSize);
+    memcpy(buffer, fieldValue1->data, fieldValue1->dataSize);
+    memcpy(buffer + fieldValue1->dataSize, fieldValue2->data, fieldValue2->dataSize);
+    struct FieldValue *fieldValue = malloc(sizeof(struct FieldValue));
+    fieldValue->dataSize = (fieldValue1->dataSize + fieldValue2->dataSize);
+    fieldValue->data = buffer;
+    free(fieldValue1->data);
+    free(fieldValue2->data);
+    return fieldValue;
+}
+
+struct EntityRecord **separateEntityRecord(struct EntityRecord *entityRecord, int64_t capacity,
+                                           uint8_t fieldsNumber, struct NameTypeBlock* nameTypeBlock) {
+    struct EntityRecord *entityRecord1 = malloc(sizeof(struct EntityRecord));
+    struct EntityRecord *entityRecord2 = malloc(sizeof(struct EntityRecord));
+    entityRecord1->fields = malloc(sizeof (struct FieldValue) * fieldsNumber);
+    entityRecord2->fields = malloc(sizeof (struct FieldValue) * fieldsNumber);
+    struct linkNext *linkNext1 = malloc(sizeof (struct linkNext));
+    struct linkNext *linkNext2 = malloc(sizeof (struct linkNext));
+    entityRecord1->linkNext = linkNext1;
+    entityRecord2->linkNext = linkNext2;
+    uint8_t fieldsNumber2 = 0;
+    bool isSeparated = false;
+    for (uint8_t i = 0; i < fieldsNumber; i++) {
+        capacity -= sizeof(uint64_t);
+        if (capacity < 0) {
+            if (!isSeparated) {
+                isSeparated = true;
+                entityRecord1->linkNext->fieldNumber = i;
+                entityRecord1->linkNext->positionInField = 0;
+            }
+            entityRecord2->fields[fieldsNumber2].data = entityRecord->fields[i].data;
+            entityRecord2->fields[fieldsNumber2].dataSize = entityRecord->fields[i].dataSize;
+            fieldsNumber2++;
+            continue;
+        }
+        capacity -= entityRecord->fields[i].dataSize;
+        if (capacity < 0) {
+            if (nameTypeBlock[i].dataType == STRING) {
+                capacity += entityRecord->fields[i].dataSize;
+                struct FieldValue **fieldValues = separateString(&entityRecord->fields[i], capacity);
+                entityRecord1->fields[i].data = fieldValues[0]->data;
+                entityRecord1->fields[i].dataSize = fieldValues[0]->dataSize;
+
+                if (!isSeparated) {
+                    isSeparated = true;
+                    entityRecord1->linkNext->fieldNumber = i;
+                    entityRecord1->linkNext->positionInField = entityRecord1->fields[i].dataSize;
+                }
+
+                entityRecord2->fields[fieldsNumber2].data = fieldValues[1]->data;
+                entityRecord2->fields[fieldsNumber2].dataSize = fieldValues[1]->dataSize;
+                capacity -= entityRecord->fields[i].dataSize;
+            } else {
+                if (!isSeparated) {
+                    isSeparated = true;
+                    entityRecord1->linkNext->fieldNumber = i;
+                    entityRecord1->linkNext->positionInField = 0;
+                }
+                entityRecord2->fields[fieldsNumber2].data = entityRecord->fields[i].data;
+                entityRecord2->fields[fieldsNumber2].dataSize = entityRecord->fields[i].dataSize;
+            }
+            fieldsNumber2++;
+            continue;
+        }
+        entityRecord1->fields[i].data = entityRecord->fields[i].data;
+        entityRecord1->fields[i].dataSize = entityRecord->fields[i].dataSize;
+    }
+    struct EntityRecord **entityRecords = (struct EntityRecord **) malloc(2 * sizeof(struct EntityRecord *));
+    entityRecords[0] = entityRecord1;
+    entityRecords[1] = entityRecord2;
+    free(entityRecord->fields);
+    free(entityRecord);
+    return entityRecords;
+}
+
+struct EntityRecord* compoundEntityRecords(struct EntityRecord* entityRecord1, struct EntityRecord* entityRecord2, uint8_t fieldsNumber) {
+    struct EntityRecord *entityRecord = malloc(sizeof (struct EntityRecord));
+    struct FieldValue *fields = malloc(sizeof (struct FieldValue) * fieldsNumber);
+    struct linkNext *linkNext = malloc(sizeof (struct linkNext));
+    entityRecord->fields = fields;
+    entityRecord->linkNext = linkNext;
+    uint8_t fieldsNumber2 = 0;
+    for (uint8_t  i = 0; i < fieldsNumber; i++) {
+        if (i < entityRecord1->linkNext->fieldNumber) {
+            entityRecord->fields[i].data = entityRecord1->fields[i].data;
+            entityRecord->fields[i].dataSize = entityRecord1->fields[i].dataSize;
+            continue;
+        }
+        if (i == entityRecord1->linkNext->fieldNumber && entityRecord1->linkNext->fieldNumber > 0) {
+            struct FieldValue* fieldValue = concatenateFieldValues(&entityRecord1->fields[i], &entityRecord2->fields[fieldsNumber2]);
+            entityRecord->fields[i].data = fieldValue->data;
+            entityRecord->fields[i].dataSize = fieldValue->dataSize;
+            fieldsNumber2++;
+            continue;
+        }
+        entityRecord->fields[i].data = entityRecord2->fields[fieldsNumber2].data;
+        entityRecord->fields[i].dataSize = entityRecord2->fields[fieldsNumber2].dataSize;
+        fieldsNumber2++;
+    }
+    entityRecord->linkNext->fieldNumber = entityRecord2->linkNext->fieldNumber;
+    entityRecord->linkNext->positionInField = entityRecord2->linkNext->positionInField;
+    entityRecord->linkNext->blockOffset = entityRecord2->linkNext->blockOffset;
+    entityRecord->linkNext->offsetInBlock = entityRecord2->linkNext->offsetInBlock;
+
+    free(entityRecord1->fields);
+    free(entityRecord1);
+    free(entityRecord2->fields);
+    free(entityRecord2);
+
+    return entityRecord;
 }

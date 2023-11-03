@@ -44,9 +44,8 @@ void freeEntityRecord(struct EntityRecord *entityRecord, uint32_t fieldsNumber) 
     }
 }
 
-struct NameType *initNameType(const char *fieldName, enum DataType dataType) {
+struct NameType *initNameType(const char *fieldName) {
     struct NameType *nameType = malloc(sizeof(struct NameType));
-    nameType->dataType = dataType;
     nameType->fieldName = fieldName;
     return nameType;
 }

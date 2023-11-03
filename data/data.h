@@ -1,5 +1,6 @@
 #include <stdint-gcc.h>
 #include "stdlib.h"
+#include "stdbool.h"
 
 #ifndef LAB1_DATA_H
 #define LAB1_DATA_H
@@ -20,12 +21,19 @@ struct FieldValue {
 
 struct NameType {
     char *fieldName;
-    enum DataType dataType;
 };
 
 
+struct linkNext {
+    uint64_t blockOffset;
+    uint16_t offsetInBlock;
+    uint8_t fieldNumber;
+    uint64_t positionInField;
+};
+
 struct EntityRecord {
     struct FieldValue *fields;
+    struct linkNext *linkNext;
 };
 
 struct Table {
@@ -35,7 +43,6 @@ struct Table {
     uint32_t fieldsNumber;
     uint32_t recordsNumber;
     uint32_t capacity;
-
 };
 
 struct Schema {

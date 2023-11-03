@@ -5,7 +5,7 @@
 #include <bits/types/FILE.h>
 #include <stdio.h>
 
-
+// Проверено
 struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType) {
     struct NameTypeBlock* nameTypeBlock = malloc(sizeof (struct NameTypeBlock));
     strcpy(nameTypeBlock->fieldName, fieldName);
@@ -13,6 +13,7 @@ struct NameTypeBlock* initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NA
     return nameTypeBlock;
 }
 
+// Проверено
 struct tableOffsetBlock* initTableOffsetBlock(FILE* file, const char name[MAX_LENGTH_TABLE_NAME],
         uint8_t fieldsNumber, const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]) {
     struct tableOffsetBlock* tableOffsetBlock = malloc(sizeof (struct tableOffsetBlock));
