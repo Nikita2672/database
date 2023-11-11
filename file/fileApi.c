@@ -103,6 +103,7 @@ uint64_t countNeededSpace(struct EntityRecord *entityRecord, uint8_t fieldsNumbe
     return neededSpace;
 }
 
+// переписать с учетом раздельных сущностей
 void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOffsetBlock *tableOffsetBlock) {
     struct headerSection headerSection;
     fseek(file, tableOffsetBlock->lastTableBLockOffset, SEEK_SET);
@@ -152,6 +153,7 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
     }
 }
 
+// переписать с учетом раздельных сущностей
 struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
     idPosition++;
     struct headerSection *headerSection = malloc(sizeof(struct headerSection));
@@ -281,6 +283,7 @@ void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId *recordIdArr
 }
 
 // checked
+// переписать с учетом раздельных сущностей
 void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) {
     struct headerSection headerSection;
     struct specialDataSection specialDataSection;
