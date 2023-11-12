@@ -15,7 +15,6 @@
 #define BUFFER_SIZE 21
 #define NORMAL_SPACE 200
 
-// checked
 void writeEmptyTablesBlock(FILE *file) {
     struct defineTablesBlock *data = malloc(sizeof(struct defineTablesBlock));
     if (data == NULL) {
@@ -30,7 +29,7 @@ void writeEmptyTablesBlock(FILE *file) {
     free(data);
 }
 
-// checked
+
 uint32_t readTablesCount(FILE *file) {
     uint32_t tablesCount;
     fseek(file, 0, SEEK_SET);
@@ -38,13 +37,13 @@ uint32_t readTablesCount(FILE *file) {
     return tablesCount;
 }
 
-// checked
+
 void writeTableCount(FILE *file, uint32_t tablesCount) {
     fseek(file, 0, SEEK_SET);
     fwrite(&tablesCount, sizeof(uint32_t), 1, file);
 }
 
-// checked
+
 uint64_t readEmptySpaceOffset(FILE *file) {
     uint64_t emptyOffset;
     fseek(file, (sizeof(struct defineTablesBlock) - sizeof(uint64_t)), SEEK_SET);
@@ -52,14 +51,14 @@ uint64_t readEmptySpaceOffset(FILE *file) {
     return emptyOffset;
 }
 
-// checked
+
 void writeEmptySpaceOffset(FILE *file, uint64_t offset) {
     uint64_t emptySpaceOffset = offset;
     fseek(file, (sizeof(struct defineTablesBlock) - sizeof(uint64_t)), SEEK_SET);
     fwrite(&emptySpaceOffset, sizeof(uint64_t), 1, file);
 }
 
-// checked
+
 struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition) {
     if (tablePosition > 1000) {
         printf("Your table number is too big");
@@ -71,7 +70,7 @@ struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition
     return tableOffsetBlock;
 }
 
-// checked
+
 uint64_t findOffsetForTableOffsetBlock(FILE *file) {
     unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
     fseek(file, sizeof(uint32_t), SEEK_SET);
@@ -94,7 +93,7 @@ uint64_t findOffsetForTableOffsetBlock(FILE *file) {
     return 0;
 }
 
-// checked
+
 void writeTableOffsetBlock(FILE *file, struct tableOffsetBlock *tableOffsetBlock) {
     uint64_t offset = findOffsetForTableOffsetBlock(file);
     fseek(file, offset, SEEK_SET);
@@ -175,7 +174,6 @@ void updateTableOffsetBlock(struct tableOffsetBlock *tableOffsetBlock, struct li
     }
 }
 
-// переписать с учетом раздельных сущностей
 void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOffsetBlock *tableOffsetBlock) {
     struct headerSection headerSection;
     fseek(file, tableOffsetBlock->lastTableBLockOffset, SEEK_SET);
@@ -188,7 +186,6 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
     if (neededSpace <= space) {
         utilInsert(file, offset, headerSection, fieldsNumber, beforeWriteOffset, entityRecord);
     } else {
-        // дописать
         if (space <= NORMAL_SPACE) {
             utilAddBlock(file, offset, headerSection, tableOffsetBlock);
             insertRecord(file, entityRecord, tableOffsetBlock);
@@ -204,9 +201,6 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
     }
 }
 
-struct EntityRecord *utilRead(FILE *file);
-
-// переписать с учетом раздельных сущностей
 struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
     idPosition++;
     struct headerSection *headerSection = malloc(sizeof(struct headerSection));
@@ -236,7 +230,6 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
             free(field);
         }
     } else {
-        // дописать
         uint16_t position;
         if (linkNext->positionInField == 0) {
             position = fieldsNumber - 1;
@@ -284,7 +277,7 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
     return NULL;
 }
 
-// checked
+
 void deleteTableOffsetBlock(FILE *file, const char *tableName) {
     struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
     fseek(file, sizeof(uint32_t), SEEK_SET);
@@ -368,8 +361,6 @@ void rebuildArrayOfRecordIds(unsigned char *buffer, struct recordId *recordIdArr
     reverseDataArray(recordIdArray, (recordsNumber - 1));
 }
 
-// checked
-// переписать с учетом раздельных сущностей
 void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) {
     struct headerSection headerSection;
     struct specialDataSection specialDataSection;
@@ -410,11 +401,10 @@ void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) 
         free(bufferAfter);
         free(recordIdArray);
     } else {
-        // дописать
     }
 }
 
-// checked
+
 void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
                            uint8_t predicateNumber) {
     uint64_t recordsNumber = 0;
@@ -430,7 +420,6 @@ void deleteRecordFromTable(FILE *file, const char *tableName, struct predicate *
     free(buffer);
 }
 
-//checked
 void updateRecordFromTable(FILE *file, const char *tableName, struct predicate *predicate,
                            uint8_t predicateNumber, struct EntityRecord *entityRecord) {
     struct iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
