@@ -13,11 +13,11 @@ uint64_t allocateBlock(FILE *file, uint64_t previousOffset, uint64_t pageNumber)
         struct EntityRecord *entityRecord = NULL;
         if (hasNext(iterator, file)) entityRecord = next(iterator, file);
         if (entityRecord != NULL) {
-            char* dataChar = (char *) entityRecord->fields[0].data;
+            char *dataChar = (char *) entityRecord->fields[0].data;
             char buffer[21];
             strncpy(buffer, dataChar, entityRecord->fields[0].dataSize);
             emptySpaceOffset = strtoull(buffer, NULL, 10);
-            struct FieldValue fieldValue = {buffer, sizeof (char ) * 21};
+            struct FieldValue fieldValue = {buffer, sizeof(char) * 21};
             struct predicate predicate = {&fieldValue, "Offset", EQUALS};
             deleteRecordFromTable(file, "Meta", &predicate, 1);
         }
@@ -25,7 +25,8 @@ uint64_t allocateBlock(FILE *file, uint64_t previousOffset, uint64_t pageNumber)
     if (emptySpaceOffset == 0) {
         fseek(file, sizeof(struct defineTablesBlock) - sizeof(uint64_t), SEEK_SET);
         fread(&emptySpaceOffset, sizeof(uint64_t), 1, file);
-        uint64_t resultOffset = emptySpaceOffset + (sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection));
+        uint64_t resultOffset =
+                emptySpaceOffset + (sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection));
         fseek(file, sizeof(struct defineTablesBlock) - sizeof(uint64_t), SEEK_SET);
         fwrite(&resultOffset, sizeof(uint64_t), 1, file);
         printf("\nEmptySpace offset: %lu\n", resultOffset);

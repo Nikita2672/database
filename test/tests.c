@@ -8,9 +8,10 @@
 #include "../util/util.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include "../platformic/cutfile.h"
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
-#define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/test/testInsert.bin"
+#define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"
 #define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
 
 #define BLOCK_SPACE sizeof (struct headerSection) + BLOCK_DATA_SIZE + sizeof (struct specialDataSection)
@@ -713,7 +714,8 @@ void test10() {
     assertEquals(*(int32_t *) entityRecord->fields[3].data, 1, "DepartmentId", 10, 3);
     assertEquals(*(int32_t *) entityRecord->fields[4].data, 1, "DepartmentId", 10, 4);
     assertEqualsS((char *) entityRecord->fields[5].data, "Entropy", "Name", 10, 5);
-    assertEqualsS((char *) entityRecord->fields[6].data, "Command develop Accounting and Invoicing modules",
+    assertEqualsS(cutString((char *) entityRecord->fields[6].data, 0, entityRecord->fields[6].dataSize),
+                  "Command develop Accounting and Invoicing modules",
                   "Description", 10, 6);
 
 
@@ -738,7 +740,8 @@ void test10() {
     assertEquals(*(int32_t *) entityRecord->fields[4].data, 3, "DepartmentId", 10, 18);
     assertEqualsS(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize), "BACKOFFICE",
                   "Name", 10, 19);
-    assertEqualsS((char *) entityRecord->fields[6].data, "Command develop backoffice module", "Description", 10, 20);
+    assertEqualsS(cutString((char *) entityRecord->fields[6].data, 0, entityRecord->fields[6].dataSize),
+                  "Command develop backoffice module", "Description", 10, 20);
     fclose(file);
 }
 
@@ -778,7 +781,7 @@ void test11() {
     assertEquals(readTablesCount(file), tableCount + tablesToInsert, "tableCount", 11, 3);
     assertEquals(readEmptySpaceOffset(file), offset + (BLOCK_SPACE) * (tablesToInsert - 1), "offset", 11, 4);
     offset = readEmptySpaceOffset(file);
-    ftruncate(fileno(file), offset + 1);
+    cutFile(file, offset + 1);
     printf("\nfileSize: %lu", getFileSize(file));
     fclose(file);
 }
@@ -802,7 +805,9 @@ void test12() {
 
         char *descriptionTest = malloc(sizeof(char) *
                                        strlen("Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)"));
-        strncpy(descriptionTest, "Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)", sizeof (char ) *
+        strncpy(descriptionTest,
+                "Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)",
+                sizeof(char) *
                 strlen("Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)"));
 
         double *scoreTest = malloc(sizeof(double));
@@ -823,9 +828,11 @@ void test12() {
 
         struct EntityRecord **entities = separateEntityRecord(entityRecordTest, i, 4, nameTypeBlocks);
         struct EntityRecord *entityRecordCompound = compoundEntityRecords(entities[0], entities[1], 4);
-        assertEquals(*(int32_t *) entityRecordCompound->fields[0].data, *ageTest, "age", 12,4 * i);
+        assertEquals(*(int32_t *) entityRecordCompound->fields[0].data, *ageTest, "age", 12, 4 * i);
         assertEquals(*(bool *) entityRecordCompound->fields[1].data, false, "sexTest", 12, 4 * i + 1);
-        assertEqualsS(cutString((char *) entityRecordCompound->fields[2].data, 0, entityRecordCompound->fields[2].dataSize), descriptionTest, "descriptionTest", 12,4 * i + 2);
+        assertEqualsS(
+                cutString((char *) entityRecordCompound->fields[2].data, 0, entityRecordCompound->fields[2].dataSize),
+                descriptionTest, "descriptionTest", 12, 4 * i + 2);
         assertEquals(*(double *) entityRecordCompound->fields[3].data, 123.324, "scoreTest", 12, 4 * i + 3);
         if (entityRecordCompound->fields[0].data != NULL) free(entityRecordCompound->fields[0].data);
         if (entityRecordCompound->fields[1].data != NULL) free(entityRecordCompound->fields[1].data);
@@ -837,4 +844,68 @@ void test12() {
     }
 }
 
+// test reading and writing entities which are separated
+void test13() {
+    FILE *file = fopen(FILE_NAME_1, "rb+");
+    ftruncate(fileno(file), 0);
+    int size = 4000;
+    char *dynamicString = malloc((size * 5 + 1) * sizeof(char));
+    int index = 0;
+    for (int i = 1000; i < (size + 1000); i += 2) {
+        dynamicString[index++] = '0' + (i / 1000);  // добавляем тысячи
+        dynamicString[index++] = '0' + (i / 100 % 10);  // добавляем сотни
+        dynamicString[index++] = '0' + (i / 10 % 10);  // добавляем десятки
+        dynamicString[index++] = '0' + (i % 10);  // добавляем единицы
+        dynamicString[index++] = '_';
+    }
+    dynamicString[size * 5] = '\0';
+
+    // test read write 1 record with big string
+    struct headerSection headerSection = {0, 0, BLOCK_DATA_SIZE, 0};
+    struct FieldValue fieldValue1 = {dynamicString, sizeof(char) * strlen(dynamicString)};
+    struct FieldValue *array = malloc(sizeof(struct FieldValue));
+    struct EntityRecord *entityRecord = malloc(sizeof(struct EntityRecord));
+    *array = fieldValue1;
+    entityRecord->fields = array;
+    writeEmptyTablesBlock(file);
+    struct NameTypeBlock nameTypeBlock1 = {"name", STRING};
+    uint64_t offset1 = readEmptySpaceOffset(file);
+    struct tableOffsetBlock tableOffsetBlock = {true, "Users",
+                                                {nameTypeBlock1}, 1, offset1,
+                                                offset1};
+    fseek(file, offset1, SEEK_SET);
+    fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+    writeEmptySpaceOffset(file, readEmptySpaceOffset(file) +
+                                (sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection)));
+    insertRecord(file, entityRecord, &tableOffsetBlock);
+
+    fseek(file, offset1, SEEK_SET);
+    struct headerSection *headerSectionRead = malloc(sizeof(struct headerSection));
+    fread(headerSectionRead, sizeof(struct headerSection), 1, file);
+    printf("\n1.Records Number: %hhu\n", headerSectionRead->recordsNumber);
+    printf("\n1.Page Number: %hu\n", headerSectionRead->pageNumber);
+    printf("\n1.EndEmptySpaceOffset %hu\n", headerSectionRead->endEmptySpaceOffset);
+    printf("\n1.StartEmptySpaceOffset: %hu\n", headerSectionRead->startEmptySpaceOffset);
+
+
+    fseek(file, offset1 + (sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection)),
+          SEEK_SET);
+    struct headerSection *headerSectionRead2 = malloc(sizeof(struct headerSection));
+    fread(headerSectionRead2, sizeof(struct headerSection), 1, file);
+    printf("\n2.Records Number: %hhu\n", headerSectionRead2->recordsNumber);
+    printf("\n2.Page Number: %hu\n", headerSectionRead2->pageNumber);
+    printf("\n2.EndEmptySpaceOffset %hu\n", headerSectionRead2->endEmptySpaceOffset);
+    printf("\n2.StartEmptySpaceOffset: %hu\n", headerSectionRead2->startEmptySpaceOffset);
+
+    struct EntityRecord *entityRecordRead = readRecord(file, 0, offset1 +
+                                                                (sizeof(struct headerSection) + BLOCK_DATA_SIZE +
+                                                                 sizeof(struct specialDataSection)), 1);
+    printf("\n%lu", entityRecordRead->fields[0].dataSize);
+    printf("\n%s", (char *) entityRecordRead->fields[0].data);
+    printf("\n%s\n", dynamicString);
+    free(headerSectionRead);
+    free(headerSectionRead2);
+    free(dynamicString);
+    fclose(file);
+}
 

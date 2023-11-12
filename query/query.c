@@ -1,40 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "../errors.h"
 #include "query.h"
 #include "../data/comparator.h"
 #include "../file/tableBlocks.h"
 
-struct query* createQuery(enum operations operation, struct predicate* predicate,
-        uint32_t predicateNumber, char *tableName) {
-    struct query* newQuery = (struct query*) malloc(sizeof (struct query));
-    if (newQuery == NULL) {
-        errorAllocation("query");
-        return NULL;
-    }
-    newQuery->tableName = tableName;
-    newQuery->operation = operation;
-    newQuery->predicates = predicate;
-    newQuery->predicatesNumber = predicateNumber;
-    return newQuery;
-}
-
-struct predicate* createPredicate(struct FieldValue* comparableValue, char *fieldName, enum compare comparator) {
-    struct predicate* newPredicate = (struct predicate*)malloc(sizeof(struct predicate));
-    if (newPredicate == NULL) {
-        errorAllocation("predicate");
-        return NULL;
-    }
-    newPredicate->comparableValue = comparableValue;
-    newPredicate->fieldName = fieldName;
-    newPredicate->comparator = comparator;
-    return newPredicate;
-}
-
-bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityRecord, uint16_t fieldsNumber,
-        struct NameTypeBlock* nameTypeBlock) {
+bool checkPredicate(struct predicate *predicate, struct EntityRecord *entityRecord, uint16_t fieldsNumber,
+                    struct NameTypeBlock *nameTypeBlock) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
-        char* fieldName = nameTypeBlock[i].fieldName;
+        char *fieldName = nameTypeBlock[i].fieldName;
         if (strcmp(fieldName, predicate->fieldName) == 0) {
             int8_t result = compare(entityRecord->fields[i], *predicate->comparableValue, nameTypeBlock[i].dataType);
             switch (predicate->comparator) {
@@ -57,7 +30,7 @@ bool checkPredicate(struct predicate* predicate, struct EntityRecord* entityReco
     return false;
 }
 
-void freePredicate(struct predicate* predicate) {
+void freePredicate(struct predicate *predicate) {
     if (predicate != NULL) {
         free(predicate->fieldName);
         free(predicate->comparableValue->data);
@@ -65,7 +38,7 @@ void freePredicate(struct predicate* predicate) {
     }
 }
 
-void freeQuery(struct query* query) {
+void freeQuery(struct query *query) {
     if (query != NULL) {
         if (query->predicates != NULL) {
             for (uint32_t i = 0; i < query->predicatesNumber; i++) {

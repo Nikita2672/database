@@ -8,6 +8,7 @@
 #include <memory.h>
 #include "../util/util.h"
 
+
 bool hasNext(struct iterator *iterator, FILE *file) {
     struct headerSection headerSection;
     fseek(file, iterator->blockOffset, SEEK_SET);
@@ -24,7 +25,7 @@ bool hasNext(struct iterator *iterator, FILE *file) {
                 break;
             }
         }
-//        freeEntityRecord(entityRecord, iterator->fieldsNumber);
+        freeEntityRecord(entityRecord, iterator->fieldsNumber);
         if (valid) {
             hasNextVariable = true;
             iterator->currentPositionInBlock = (i + 1);
@@ -54,7 +55,7 @@ struct EntityRecord *concatenateEntityRecords(struct EntityRecord *entityRecord1
     if (entityRecord2 == NULL) return entityRecord1;
     struct FieldValue *newFields = malloc(sizeof(struct FieldValue) * (fieldsNumber1 + fieldsNumber2));
     memcpy(newFields, entityRecord1->fields, sizeof(struct FieldValue) * fieldsNumber1);
-    memcpy(newFields + fieldsNumber1, entityRecord2->fields,sizeof(struct FieldValue) * fieldsNumber2);
+    memcpy(newFields + fieldsNumber1, entityRecord2->fields, sizeof(struct FieldValue) * fieldsNumber2);
     struct EntityRecord *entityRecord = malloc(sizeof(struct EntityRecord));
     entityRecord->fields = newFields;
     return entityRecord;

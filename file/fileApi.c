@@ -13,6 +13,7 @@
 #define BLOCK_SIZE sizeof(struct headerSection) + BLOCK_DATA_SIZE + sizeof(struct specialDataSection)
 // Размер буфера для того чтобы поместилось число типа uint64_t как строка 20-знаков + нуль терминатор
 #define BUFFER_SIZE 21
+#define NORMAL_SPACE 200
 
 // checked
 void writeEmptyTablesBlock(FILE *file) {
@@ -29,6 +30,7 @@ void writeEmptyTablesBlock(FILE *file) {
     free(data);
 }
 
+// checked
 uint32_t readTablesCount(FILE *file) {
     uint32_t tablesCount;
     fseek(file, 0, SEEK_SET);
@@ -36,11 +38,13 @@ uint32_t readTablesCount(FILE *file) {
     return tablesCount;
 }
 
+// checked
 void writeTableCount(FILE *file, uint32_t tablesCount) {
     fseek(file, 0, SEEK_SET);
     fwrite(&tablesCount, sizeof(uint32_t), 1, file);
 }
 
+// checked
 uint64_t readEmptySpaceOffset(FILE *file) {
     uint64_t emptyOffset;
     fseek(file, (sizeof(struct defineTablesBlock) - sizeof(uint64_t)), SEEK_SET);
@@ -48,13 +52,14 @@ uint64_t readEmptySpaceOffset(FILE *file) {
     return emptyOffset;
 }
 
+// checked
 void writeEmptySpaceOffset(FILE *file, uint64_t offset) {
     uint64_t emptySpaceOffset = offset;
     fseek(file, (sizeof(struct defineTablesBlock) - sizeof(uint64_t)), SEEK_SET);
     fwrite(&emptySpaceOffset, sizeof(uint64_t), 1, file);
 }
 
-// Проверено
+// checked
 struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition) {
     if (tablePosition > 1000) {
         printf("Your table number is too big");
@@ -66,6 +71,7 @@ struct tableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition
     return tableOffsetBlock;
 }
 
+// checked
 uint64_t findOffsetForTableOffsetBlock(FILE *file) {
     unsigned char *buffer = malloc(sizeof(struct tableOffsetBlock) * MAX_TABLES);
     fseek(file, sizeof(uint32_t), SEEK_SET);
@@ -88,11 +94,13 @@ uint64_t findOffsetForTableOffsetBlock(FILE *file) {
     return 0;
 }
 
+// checked
 void writeTableOffsetBlock(FILE *file, struct tableOffsetBlock *tableOffsetBlock) {
     uint64_t offset = findOffsetForTableOffsetBlock(file);
     fseek(file, offset, SEEK_SET);
     fwrite(tableOffsetBlock, sizeof(struct tableOffsetBlock), 1, file);
 }
+
 
 uint64_t countNeededSpace(struct EntityRecord *entityRecord, uint8_t fieldsNumber) {
     uint16_t neededSpace = sizeof(struct recordId);
@@ -100,7 +108,71 @@ uint64_t countNeededSpace(struct EntityRecord *entityRecord, uint8_t fieldsNumbe
         neededSpace += sizeof(uint64_t);
         neededSpace += entityRecord->fields[i].dataSize;
     }
+    neededSpace += sizeof (struct linkNext);
     return neededSpace;
+}
+
+void utilInsert(FILE * file, uint64_t offset, struct headerSection headerSection, uint16_t fieldsNumber, uint16_t beforeWriteOffset,
+        struct EntityRecord *entityRecord) {
+    fseek(file, offset + sizeof(struct headerSection) + headerSection.startEmptySpaceOffset, SEEK_SET);
+    uint16_t writtenData = 0;
+    if (entityRecord->linkNext == NULL || entityRecord->linkNext->blockOffset == 0) {
+        struct linkNext linkNext = {0, 0, 0, 0, 0};
+        uint16_t idPosition = abs(headerSection.endEmptySpaceOffset - BLOCK_DATA_SIZE) / sizeof (struct recordId);
+        linkNext.idPosition = idPosition;
+        writtenData += fwrite(&linkNext, sizeof (struct linkNext), 1, file) * sizeof (struct  linkNext);
+    } else {
+        uint16_t idPosition = abs(headerSection.endEmptySpaceOffset - BLOCK_DATA_SIZE) / sizeof (struct recordId);
+        entityRecord->linkNext->idPosition = idPosition;
+        writtenData += fwrite(entityRecord->linkNext, sizeof (struct linkNext), 1, file) * sizeof (struct  linkNext);
+    }
+    for (uint16_t i = 0; i < fieldsNumber; i++) {
+        struct FieldValue *field = &entityRecord->fields[i];
+        writtenData += fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
+        writtenData += fwrite(field->data, 1, field->dataSize, file);
+    }
+    uint16_t length = writtenData;
+    uint16_t offsetRecord = beforeWriteOffset;
+    struct recordId recordId;
+    recordId.offset = offsetRecord;
+    recordId.length = length;
+    uint64_t recordIdOffset =
+            offset + sizeof(struct headerSection) + headerSection.endEmptySpaceOffset - sizeof(struct recordId);
+    fseek(file, recordIdOffset, SEEK_SET);
+    fwrite(&recordId, sizeof(struct recordId), 1, file);
+    fseek(file, offset, SEEK_SET);
+    headerSection.endEmptySpaceOffset -= sizeof(struct recordId);
+    headerSection.startEmptySpaceOffset += writtenData;
+    headerSection.recordsNumber++;
+    fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+}
+
+void utilAddBlock(FILE* file, uint64_t offset, struct headerSection headerSection, struct tableOffsetBlock *tableOffsetBlock) {
+    fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+    struct specialDataSection specialDataSection;
+    fread(&specialDataSection, sizeof(struct specialDataSection), 1, file);
+    uint64_t newBlockOffset = allocateBlock(file, offset, headerSection.pageNumber + 1);
+    specialDataSection.nextBlockOffset = newBlockOffset;
+    tableOffsetBlock->lastTableBLockOffset = newBlockOffset;
+    fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
+    fwrite(&specialDataSection, sizeof(struct specialDataSection), 1, file);
+}
+
+void updateTableOffsetBlock(struct tableOffsetBlock *tableOffsetBlock, struct linkNext *linkNext) {
+    uint8_t fieldsNumber = tableOffsetBlock->fieldsNumber;
+    uint8_t startPosition;
+    if (linkNext->positionInField != 0) {
+        tableOffsetBlock->fieldsNumber -= (linkNext->fieldNumber);
+        startPosition = linkNext->fieldNumber + 1;
+    } else {
+        tableOffsetBlock->fieldsNumber -= linkNext->fieldNumber;
+        startPosition = linkNext->fieldNumber;
+    }
+    uint8_t j = 0;
+    for (uint8_t i = startPosition; i < fieldsNumber; i++) {
+        tableOffsetBlock->nameTypeBlock[j] = tableOffsetBlock->nameTypeBlock[i];
+        j++;
+    }
 }
 
 // переписать с учетом раздельных сущностей
@@ -114,44 +186,25 @@ void insertRecord(FILE *file, struct EntityRecord *entityRecord, struct tableOff
     uint16_t beforeWriteOffset = headerSection.startEmptySpaceOffset;
     uint64_t neededSpace = countNeededSpace(entityRecord, fieldsNumber);
     if (neededSpace <= space) {
-        fseek(file, offset + sizeof(struct headerSection) + headerSection.startEmptySpaceOffset, SEEK_SET);
-        uint16_t writtenData = 0;
-        for (uint16_t i = 0; i < fieldsNumber; i++) {
-            struct FieldValue *field = &entityRecord->fields[i];
-            writtenData += fwrite(&field->dataSize, sizeof(uint64_t), 1, file) * sizeof(uint64_t);
-            writtenData += fwrite(field->data, 1, field->dataSize, file);
-        }
-        uint16_t length = writtenData;
-        uint16_t offsetRecord = beforeWriteOffset;
-        struct recordId recordId;
-        recordId.offset = offsetRecord;
-        recordId.length = length;
-        uint64_t recordIdOffset =
-                offset + sizeof(struct headerSection) + headerSection.endEmptySpaceOffset - sizeof(struct recordId);
-        fseek(file, recordIdOffset, SEEK_SET);
-        fwrite(&recordId, sizeof(struct recordId), 1, file);
-        fseek(file, offset, SEEK_SET);
-        headerSection.endEmptySpaceOffset -= sizeof(struct recordId);
-        headerSection.startEmptySpaceOffset += writtenData;
-        headerSection.recordsNumber++;
-        fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+        utilInsert(file, offset, headerSection, fieldsNumber, beforeWriteOffset, entityRecord);
     } else {
         // дописать
-        if (neededSpace >= BLOCK_DATA_SIZE) {
-            printf("Your data too big");
-            return;
+        if (space <= NORMAL_SPACE) {
+            utilAddBlock(file, offset, headerSection, tableOffsetBlock);
+            insertRecord(file, entityRecord, tableOffsetBlock);
+        } else {
+            uint16_t capacity = (space - sizeof (struct linkNext) - sizeof (struct recordId));
+            struct EntityRecord **entities = separateEntityRecord(entityRecord, capacity, fieldsNumber, tableOffsetBlock->nameTypeBlock);
+            entities[0]->linkNext->blockOffset = readEmptySpaceOffset(file);
+            utilInsert(file, offset, headerSection, fieldsNumber, beforeWriteOffset, entities[0]);
+            utilAddBlock(file, offset, headerSection, tableOffsetBlock);
+            updateTableOffsetBlock(tableOffsetBlock, entities[0]->linkNext);
+            insertRecord(file, entities[1], tableOffsetBlock);
         }
-        fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
-        struct specialDataSection specialDataSection;
-        fread(&specialDataSection, sizeof(struct specialDataSection), 1, file);
-        uint64_t newBlockOffset = allocateBlock(file, offset, headerSection.pageNumber + 1);
-        specialDataSection.nextBlockOffset = newBlockOffset;
-        fseek(file, offset + sizeof(struct headerSection) + BLOCK_DATA_SIZE, SEEK_SET);
-        fwrite(&specialDataSection, sizeof(struct specialDataSection), 1, file);
-        insertRecord(file, entityRecord, tableOffsetBlock);
-        return;
     }
 }
+
+struct EntityRecord *utilRead(FILE *file);
 
 // переписать с учетом раздельных сущностей
 struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset, uint16_t fieldsNumber) {
@@ -168,17 +221,49 @@ struct EntityRecord *readRecord(FILE *file, uint16_t idPosition, uint64_t offset
     struct EntityRecord *entityRecord = malloc(sizeof(struct EntityRecord));
     struct FieldValue *fields = malloc(sizeof(struct FieldValue) * fieldsNumber);
     uint32_t readingOffset = sizeof(struct headerSection) + recordId->offset;
-    for (uint16_t i = 0; i < fieldsNumber; i++) {
-        struct FieldValue *field = malloc(sizeof(struct FieldValue));
-        memcpy(&field->dataSize, buffer + readingOffset, sizeof(uint64_t));
-        readingOffset += sizeof(uint64_t);
-        field->data = malloc(field->dataSize);
-        memcpy(field->data, buffer + readingOffset, field->dataSize);
-        readingOffset += field->dataSize;
-        fields[i] = *field;
-        free(field);
+    struct linkNext *linkNext = malloc(sizeof (struct linkNext));
+    memcpy(linkNext, buffer + readingOffset, sizeof (struct linkNext));
+    readingOffset += sizeof (struct linkNext);
+    if (linkNext->blockOffset == 0) {
+        for (uint16_t i = 0; i < fieldsNumber; i++) {
+            struct FieldValue *field = malloc(sizeof(struct FieldValue));
+            memcpy(&field->dataSize, buffer + readingOffset, sizeof(uint64_t));
+            readingOffset += sizeof(uint64_t);
+            field->data = malloc(field->dataSize);
+            memcpy(field->data, buffer + readingOffset, field->dataSize);
+            readingOffset += field->dataSize;
+            fields[i] = *field;
+            free(field);
+        }
+    } else {
+        // дописать
+        uint16_t position;
+        if (linkNext->positionInField == 0) {
+            position = fieldsNumber - 1;
+        } else {
+            position = fieldsNumber;
+        }
+        for (uint16_t i = 0; i < position; i++) {
+            struct FieldValue *field = malloc(sizeof(struct FieldValue));
+            memcpy(&field->dataSize, buffer + readingOffset, sizeof(uint64_t));
+            readingOffset += sizeof(uint64_t);
+            field->data = malloc(field->dataSize);
+            memcpy(field->data, buffer + readingOffset, field->dataSize);
+            readingOffset += field->dataSize;
+            fields[i] = *field;
+            free(field);
+        }
+        entityRecord->fields = fields;
+        entityRecord->linkNext = linkNext;
+        struct EntityRecord *entityRecord1 = readRecord(file, linkNext->idPosition, linkNext->blockOffset, fieldsNumber - linkNext->fieldNumber);
+        struct EntityRecord *entityRecords = compoundEntityRecords(entityRecord, entityRecord1, fieldsNumber);
+        free(buffer);
+        free(headerSection);
+        free(recordId);
+        return entityRecords;
     }
     free(buffer);
+    entityRecord->linkNext = linkNext;
     entityRecord->fields = fields;
     free(headerSection);
     free(recordId);
@@ -199,6 +284,7 @@ struct tableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName)
     return NULL;
 }
 
+// checked
 void deleteTableOffsetBlock(FILE *file, const char *tableName) {
     struct tableOffsetBlock *tableOffsetBlock = malloc(sizeof(struct tableOffsetBlock));
     fseek(file, sizeof(uint32_t), SEEK_SET);
@@ -295,31 +381,37 @@ void deleteRecord(FILE *file, struct iterator *iterator, unsigned char *buffer) 
            sizeof(struct specialDataSection));
     memcpy(&recordId, buffer + sizeof(struct headerSection) + BLOCK_DATA_SIZE -
                       sizeof(struct recordId) * iterator->currentPositionInBlock, sizeof(struct recordId));
-    uint32_t bufferBeforeSize = recordId.offset;
-    unsigned char *bufferBefore = malloc(bufferBeforeSize);
-    memcpy(bufferBefore, buffer + sizeof(struct headerSection), recordId.offset);
-    struct recordId *recordIdArray = malloc(sizeof(struct recordId) * (headerSection.recordsNumber - 1));
-    rebuildArrayOfRecordIds(buffer, recordIdArray, headerSection.recordsNumber, iterator->currentPositionInBlock,
-                            recordId.length);
-    uint32_t bufferAfterSize = headerSection.endEmptySpaceOffset - (recordId.offset + recordId.length);
-    uint32_t bufferAfterStartOffset = sizeof(struct headerSection) + recordId.offset + recordId.length;
-    unsigned char *bufferAfter = malloc(bufferAfterSize);
-    memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
-    headerSection.recordsNumber--;
-    headerSection.startEmptySpaceOffset -= recordId.length;
-    headerSection.endEmptySpaceOffset += sizeof(struct recordId);
-    fseek(file, iterator->blockOffset, SEEK_SET);
-    fwrite(&headerSection, sizeof(struct headerSection), 1, file);
-    fwrite(bufferBefore, bufferBeforeSize, 1, file);
-    fwrite(bufferAfter, bufferAfterSize, 1, file);
-    uint32_t recordIdsOffset = iterator->blockOffset + sizeof(struct headerSection) + BLOCK_DATA_SIZE -
-                               sizeof(struct recordId) * headerSection.recordsNumber;
-    fseek(file, recordIdsOffset, SEEK_SET);
-    fwrite(recordIdArray, sizeof(struct recordId) * headerSection.recordsNumber, 1, file);
-    fflush(file);
-    free(bufferBefore);
-    free(bufferAfter);
-    free(recordIdArray);
+    struct linkNext *linkNext = malloc(sizeof (struct linkNext));
+    memcpy(linkNext, buffer + sizeof (struct headerSection) + recordId.offset, sizeof (struct linkNext));
+    if (linkNext->blockOffset == 0) {
+        uint32_t bufferBeforeSize = recordId.offset;
+        unsigned char *bufferBefore = malloc(bufferBeforeSize);
+        memcpy(bufferBefore, buffer + sizeof(struct headerSection), recordId.offset);
+        struct recordId *recordIdArray = malloc(sizeof(struct recordId) * (headerSection.recordsNumber - 1));
+        rebuildArrayOfRecordIds(buffer, recordIdArray, headerSection.recordsNumber, iterator->currentPositionInBlock,
+                                recordId.length);
+        uint32_t bufferAfterSize = headerSection.endEmptySpaceOffset - (recordId.offset + recordId.length);
+        uint32_t bufferAfterStartOffset = sizeof(struct headerSection) + recordId.offset + recordId.length;
+        unsigned char *bufferAfter = malloc(bufferAfterSize);
+        memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
+        headerSection.recordsNumber--;
+        headerSection.startEmptySpaceOffset -= recordId.length;
+        headerSection.endEmptySpaceOffset += sizeof(struct recordId);
+        fseek(file, iterator->blockOffset, SEEK_SET);
+        fwrite(&headerSection, sizeof(struct headerSection), 1, file);
+        fwrite(bufferBefore, bufferBeforeSize, 1, file);
+        fwrite(bufferAfter, bufferAfterSize, 1, file);
+        uint32_t recordIdsOffset = iterator->blockOffset + sizeof(struct headerSection) + BLOCK_DATA_SIZE -
+                                   sizeof(struct recordId) * headerSection.recordsNumber;
+        fseek(file, recordIdsOffset, SEEK_SET);
+        fwrite(recordIdArray, sizeof(struct recordId) * headerSection.recordsNumber, 1, file);
+        fflush(file);
+        free(bufferBefore);
+        free(bufferAfter);
+        free(recordIdArray);
+    } else {
+        // дописать
+    }
 }
 
 // checked
@@ -370,6 +462,7 @@ void deleteTable(const char *tableName, FILE *file) {
         fieldValue.data = &buffer;
         fieldValue.dataSize = sizeof(char) * BUFFER_SIZE;
         entityRecord.fields = &fieldValue;
+        entityRecord.linkNext = NULL;
         insertRecordIntoTable(file, &entityRecord, "Meta");
         offset = specialDataSection.nextBlockOffset;
     }
@@ -485,7 +578,7 @@ struct EntityRecord* compoundEntityRecords(struct EntityRecord* entityRecord1, s
             entityRecord->fields[i].dataSize = entityRecord1->fields[i].dataSize;
             continue;
         }
-        if (i == entityRecord1->linkNext->fieldNumber && entityRecord1->linkNext->fieldNumber > 0) {
+        if (i == entityRecord1->linkNext->fieldNumber && entityRecord1->linkNext->fieldNumber >= 0) {
             struct FieldValue* fieldValue = concatenateFieldValues(&entityRecord1->fields[i], &entityRecord2->fields[fieldsNumber2]);
             entityRecord->fields[i].data = fieldValue->data;
             entityRecord->fields[i].dataSize = fieldValue->dataSize;
