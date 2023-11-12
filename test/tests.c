@@ -1,14 +1,14 @@
-#include "../file/fileApi.h"
+#include "../public/file/fileApi.h"
 #include "stdio.h"
-#include "../file/tableBlocks.h"
+#include "../public/file/tableBlocks.h"
 #include <string.h>
 #include "tests.h"
-#include "../query/query.h"
-#include "../file/iterator.h"
-#include "../util/util.h"
+#include "../public/query/query.h"
+#include "../public/file/iterator.h"
+#include "../public/util/util.h"
 #include <fcntl.h>
 #include <unistd.h>
-#include "../platformic/cutfile.h"
+#include "../public/platformic/cutfile.h"
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 #define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"

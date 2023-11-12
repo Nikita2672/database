@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
-#include "allocator.h"
-#include "tableBlocks.h"
-#include "dataBlocks.h"
-#include "fileApi.h"
-#include "iterator.h"
+#include "../../public/file/allocator.h"
+#include "../../public/file/tableBlocks.h"
+#include "../../public/file/dataBlocks.h"
+#include "../../public/file/fileApi.h"
+#include "../../public/file/iterator.h"
 
 uint64_t allocateBlock(FILE *file, uint64_t previousOffset, uint64_t pageNumber) {
     struct iterator *iterator = readEntityRecordWithCondition(file, "Meta", NULL, 0);

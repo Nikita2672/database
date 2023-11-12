@@ -1,5 +1,5 @@
-#include "tableBlocks.h"
-#include "allocator.h"
+#include "../../public/file/tableBlocks.h"
+#include "../../public/file/allocator.h"
 #include <stdbool.h>
 #include <string.h>
 #include <bits/types/FILE.h>

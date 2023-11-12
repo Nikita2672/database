@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include "stdlib.h"
-#include "../data/data.h"
-#include "../file/tableBlocks.h"
+#include "../../public/data/data.h"
+#include "../../public/file/tableBlocks.h"
 
 #ifndef LAB1_QUERY_H
 #define LAB1_QUERY_H

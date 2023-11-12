@@ -1,4 +1,5 @@
-#include "util.h"
+#include <stdint-gcc.h>
+#include "../../public/util/util.h"
 #include "string.h"
 
 void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber, struct NameTypeBlock *nameTypeBlock) {

@@ -1,9 +1,5 @@
-//
-// Created by iwaa0303 on 07/10/23.
-//
-
-#include "comparator.h"
-#include "../util/util.h"
+#include "../../public/data/comparator.h"
+#include "../../public/util/util.h"
 
 int8_t compareInt(int32_t value1, int32_t value2) {
     if (value1 > value2) return 1;

@@ -1,8 +1,8 @@
 #ifndef LAB1_UTIL_H
 #define LAB1_UTIL_H
 
-#include "../data/data.h"
-#include "../file/tableBlocks.h"
+#include "../../public/data/data.h"
+#include "../../public/file/tableBlocks.h"
 #include "stdio.h"
 
 void printEntityRecord(struct EntityRecord *entityRecord, uint16_t fieldsNumber, struct NameTypeBlock *nameTypeBlock);

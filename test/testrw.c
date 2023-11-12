@@ -1,4 +1,4 @@
-#include "../file/tableBlocks.h"
+#include "../public/file/tableBlocks.h"
 #include "tests.h"
 #include "local.h"
 
