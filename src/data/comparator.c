@@ -1,9 +1,5 @@
-//
-// Created by iwaa0303 on 07/10/23.
-//
-
-#include "comparator.h"
-#include "../util/util.h"
+#include "../../include/data/comparator.h"
+#include "../../include/util/util.h"
 
 int8_t compareInt(int32_t value1, int32_t value2) {
     if (value1 > value2) return 1;
@@ -17,9 +13,9 @@ int8_t compareDouble(double value1, double value2) {
     return 0;
 }
 
-int8_t compareString(char * value1, char * value2, uint64_t length) {
-    char* value11 = cutString(value1, 0, length);
-    char* value22 = cutString(value2, 0, length);
+int8_t compareString(char *value1, char *value2, uint64_t length) {
+    char *value11 = cutString(value1, 0, length);
+    char *value22 = cutString(value2, 0, length);
     uint8_t result = 0;
     if (strcmp(value11, value22) < 0) result = -1;
     if (strcmp(value11, value22) > 0) result = 1;
@@ -38,12 +34,12 @@ int8_t compareBoolean(bool value1, bool value2) {
 int8_t compare(struct FieldValue fieldValue1, struct FieldValue fieldValue2, enum DataType dataType) {
     switch (dataType) {
         case INT:
-            return compareInt(*(int32_t *)fieldValue1.data, *(int32_t *)fieldValue2.data);
+            return compareInt(*(int32_t *) fieldValue1.data, *(int32_t *) fieldValue2.data);
         case DOUBLE:
-            return compareDouble(*(double *)fieldValue1.data, *(double *)fieldValue2.data);
+            return compareDouble(*(double *) fieldValue1.data, *(double *) fieldValue2.data);
         case BOOL:
-            return compareBoolean(*(bool *)fieldValue1.data, *(bool *)fieldValue2.data);
+            return compareBoolean(*(bool *) fieldValue1.data, *(bool *) fieldValue2.data);
         default:
-            return compareString((char *)fieldValue1.data, (char *)fieldValue2.data, fieldValue2.dataSize);
+            return compareString((char *) fieldValue1.data, (char *) fieldValue2.data, fieldValue2.dataSize);
     }
 }
