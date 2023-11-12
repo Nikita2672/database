@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "../../public/query/query.h"
-#include "../../public/data/comparator.h"
-#include "../../public/file/tableBlocks.h"
+#include "../../include/query/query.h"
+#include "../../include/data/comparator.h"
+#include "../../include/file/tableBlocks.h"
 
 bool checkPredicate(struct predicate *predicate, struct EntityRecord *entityRecord, uint16_t fieldsNumber,
                     struct NameTypeBlock *nameTypeBlock) {

@@ -1,8 +1,7 @@
-#include "../../public/file/tableBlocks.h"
-#include "../../public/file/allocator.h"
+#include "../../include/file/tableBlocks.h"
+#include "../../include/file/allocator.h"
 #include <stdbool.h>
 #include <string.h>
-#include <bits/types/FILE.h>
 #include <stdio.h>
 
 

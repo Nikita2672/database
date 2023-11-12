@@ -1,14 +1,19 @@
-cmake_minimum_required(VERSION 3.25)
-project(lab1)
+cmake_minimum_required(VERSION 3.22.1)
+project(llp C)
 
-set(CMAKE_CXX_STANDARD 17)
 
-add_executable(lab1 test/testrw.c private/query/query.c public/query/query.h public/data/data.h private/file/tableBlocks.c private/file/fileApi.c public/file/tableBlocks.h public/file/fileApi.h test/tests.c test/tests.h public/file/dataBlocks.h private/file/allocator.c public/file/allocator.h private/file/iterator.c public/file/iterator.h private/data/comparator.c public/data/comparator.h
-        private/util/util.c
-        public/util/util.h
-        test/local.c
-        test/local.h
-        private/platformic/cutfile.c
-        public/platformic/cutfile.h)
+set(CMAKE_C_STANDARD 11)
 
-#include_directories(include)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -fsanitize-address-use-after-scope -g")
+
+file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/**.c)
+file(GLOB_RECURSE HEADERS ${CMAKE_CURRENT_LIST_DIR}/include/**.h)
+
+include_directories(include)
+
+add_executable(${PROJECT_NAME} main.c
+        src/util/tests.c)
+
+target_sources(${PROJECT_NAME} PRIVATE ${SOURCES} PUBLIC ${HEADERS})
+
+add_library(${PROJECT_NAME}_lib ${SOURCES})

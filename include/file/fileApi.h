@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <bits/types/FILE.h>
-#include "../../public/data/data.h"
+#include "../../include/data/data.h"
 #include "dataBlocks.h"
 
 void writeEmptyTablesBlock(FILE *file);

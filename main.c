@@ -1,10 +1,10 @@
-#include "../public/file/tableBlocks.h"
-#include "tests.h"
-#include "local.h"
+#include "include/file/tableBlocks.h"
+#include "include/util/tests.h"
+#include "test/local.h"
 
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 
-int main() {
+int main(void) {
     test1();
     test2();
     test3();

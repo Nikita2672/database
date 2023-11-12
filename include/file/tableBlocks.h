@@ -1,5 +1,5 @@
 #include <bits/types/FILE.h>
-#include "../../public/data/data.h"
+#include "../../include/data/data.h"
 #include "stdbool.h"
 #include "stdlib.h"
 #include "stdint.h"

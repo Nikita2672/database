@@ -1,12 +1,12 @@
-#include "../../public/file/iterator.h"
-#include "../../public/data/data.h"
-#include "../../public/file/fileApi.h"
-#include "../../public/file/dataBlocks.h"
-#include "../../public/query/query.h"
+#include "../../include/file/iterator.h"
+#include "../../include/data/data.h"
+#include "../../include/file/fileApi.h"
+#include "../../include/file/dataBlocks.h"
+#include "../../include/query/query.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
-#include "../../public/util/util.h"
+#include "../../include/util/util.h"
 
 
 bool hasNext(struct iterator *iterator, FILE *file) {

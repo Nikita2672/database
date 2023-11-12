@@ -1,12 +1,12 @@
 #include <string.h>
-#include "../../public/file/tableBlocks.h"
+#include "../../include/file/tableBlocks.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "../../public/file/dataBlocks.h"
-#include "../../public/file/allocator.h"
-#include "../../public/query/query.h"
-#include "../../public/file/fileApi.h"
-#include "../../public/file/iterator.h"
+#include "../../include/file/dataBlocks.h"
+#include "../../include/file/allocator.h"
+#include "../../include/query/query.h"
+#include "../../include/file/fileApi.h"
+#include "../../include/file/iterator.h"
 #include <inttypes.h>
 
 

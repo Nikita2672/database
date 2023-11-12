@@ -1,5 +1,5 @@
-#include "../../public/data/comparator.h"
-#include "../../public/util/util.h"
+#include "../../include/data/comparator.h"
+#include "../../include/util/util.h"
 
 int8_t compareInt(int32_t value1, int32_t value2) {
     if (value1 > value2) return 1;
