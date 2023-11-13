@@ -4,8 +4,8 @@
 #include "../../include/data/comparator.h"
 #include "../../include/file/tableBlocks.h"
 
-bool checkPredicate( Predicate *predicate,  EntityRecord *entityRecord, uint16_t fieldsNumber,
-                     NameTypeBlock *nameTypeBlock) {
+bool checkPredicate(Predicate *predicate, EntityRecord *entityRecord, uint16_t fieldsNumber,
+                    NameTypeBlock *nameTypeBlock) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         char *fieldName = nameTypeBlock[i].fieldName;
         if (strcmp(fieldName, predicate->fieldName) == 0) {
@@ -30,7 +30,7 @@ bool checkPredicate( Predicate *predicate,  EntityRecord *entityRecord, uint16_t
     return false;
 }
 
-void freePredicate( Predicate *predicate) {
+void freePredicate(Predicate *predicate) {
     if (predicate != NULL) {
         free(predicate->fieldName);
         free(predicate->comparableValue->data);
@@ -38,7 +38,7 @@ void freePredicate( Predicate *predicate) {
     }
 }
 
-void freeQuery( Query *query) {
+void freeQuery(Query *query) {
     if (query != NULL) {
         if (query->predicates != NULL) {
             for (uint32_t i = 0; i < query->predicatesNumber; i++) {

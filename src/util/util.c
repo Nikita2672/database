@@ -2,7 +2,7 @@
 #include "../../include/util/util.h"
 #include "string.h"
 
-void printEntityRecord( EntityRecord *entityRecord, uint16_t fieldsNumber,  NameTypeBlock *nameTypeBlock) {
+void printEntityRecord(EntityRecord *entityRecord, uint16_t fieldsNumber, NameTypeBlock *nameTypeBlock) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         printf("%s: ", nameTypeBlock[i].fieldName);
         switch (nameTypeBlock[i].dataType) {
@@ -47,7 +47,7 @@ uint64_t getFileSize(FILE *file) {
     return ftell(file);
 }
 
-void freeEntityRecord( EntityRecord *entityRecord, uint16_t fieldsNumber) {
+void freeEntityRecord(EntityRecord *entityRecord, uint16_t fieldsNumber) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         free(entityRecord->fields[i].data);
     }

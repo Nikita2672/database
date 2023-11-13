@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "../../include/platformic/cutfile.h"
+
 #ifdef _WIN32
 #include <io.h>
 #else

@@ -24,7 +24,7 @@
 #define BLOCK_SPACE sizeof (HeaderSection) + BLOCK_DATA_SIZE + sizeof (SpecialDataSection)
 
 static void
-assertEquals(const double found, const double expected, char *fieldName, uint8_t testNumber, uint8_t position) {
+assertEquals(const long double found, const double expected, char *fieldName, uint8_t testNumber, uint8_t position) {
     if (found != expected)
         printf("%u.%u: %s don't equals, expected %f, but found %f\n",
                testNumber, position, fieldName, expected, found);
@@ -37,9 +37,7 @@ assertEqualsString(const char *found, const char *expected, char *fieldName, uin
                testNumber, position, fieldName, expected, found);
 }
 
-// Тест проверяет запись в файл отступа и количества таблиц
-// Проверено
-void test1() {
+void test1(void) {
     FILE *file = fopen(FILE_NAME, "rb+");
     writeEmptyTablesBlock(file);
     assertEquals(readEmptySpaceOffset(file), sizeof(DefineTablesBlock) + BLOCK_SPACE, "EmptySpaceOffset", 1, 1);
@@ -51,8 +49,7 @@ void test1() {
     fclose(file);
 }
 
-// Проверено
-void test2() {
+void test2(void) {
     FILE *file = fopen(FILE_NAME, "rb+");
     NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
     NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
@@ -125,7 +122,7 @@ void test2() {
     fclose(file);
 }
 
-void test3() {
+void test3(void) {
     FILE *file = fopen(FILE_NAME_1, "rb+");
 
     // test read write 1 record
@@ -193,7 +190,7 @@ void test3() {
 }
 
 // test checkPredicate function
-void test4() {
+void test4(void) {
     NameTypeBlock nameTypeBlock1 = {"score", DOUBLE};
     NameTypeBlock nameTypeBlock2 = {"name", STRING};
     NameTypeBlock nameTypeBlock3 = {"sex", BOOL};
@@ -248,7 +245,7 @@ void test4() {
 }
 
 //check Iterator
-void test5() {
+void test5(void) {
     FILE *file = fopen(FILE_NAME, "rb+");
     double score = 123.3;
     char *name = "Ksenia";
@@ -368,7 +365,7 @@ void test5() {
 
 //check Iterator with predicates
 
-void test6() {
+void test6(void) {
     FILE *file = fopen(FILE_NAME, "rb+");
     double score = 356;
     int32_t age = 20;
@@ -442,7 +439,7 @@ static void testRebuild(void) {
     fclose(file);
 }
 
-static void testRebuild1(void ) {
+static void testRebuild1(void) {
     FILE *file = fopen(FILE_NAME_2, "rb+");
     RecordId recordId1 = {0, 21};
     RecordId recordIds[1] = {recordId1};
@@ -463,7 +460,7 @@ static void testRebuild1(void ) {
 }
 
 // deleteRecordTest
-void test7(void ) {
+void test7(void) {
     // test rebuildArrayOfRecordIds function
     testRebuild();
     testRebuild1();
@@ -539,7 +536,7 @@ void test7(void ) {
     fclose(file1);
 }
 
-void test8() {
+void test8(void) {
     test1();
     test2();
     test5();
@@ -570,7 +567,7 @@ void test8() {
 }
 
 // test update
-void test9(void ) {
+void test9(void) {
     test1();
     test2();
     test5();
@@ -612,7 +609,7 @@ void test9(void ) {
 }
 
 // test join
-void test10(void ) {
+void test10(void) {
     FILE *file = fopen(FILE_NAME, "rb+");
     NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
     NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
@@ -753,7 +750,7 @@ void test10(void ) {
 }
 
 // check memory in file
-void test11() {
+void test11(void) {
     FILE *file = fopen(FILE_NAME, "rb+");
     deleteTable("User", file);
     NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
@@ -794,7 +791,7 @@ void test11() {
 }
 
 
-void test12() {
+void test12(void) {
 
     NameTypeBlock nameTypeBlocks[4] = {{"Age",         INT},
                                        {"Sex",         BOOL},
@@ -853,7 +850,7 @@ void test12() {
 }
 
 // test reading and writing entities which are separated
-void test13() {
+void test13(void) {
     FILE *file = fopen(FILE_NAME_1, "rb+");
     ftruncate(fileno(file), 0);
     int size = 4000;
@@ -909,8 +906,8 @@ void test13() {
                                                          (sizeof(HeaderSection) + BLOCK_DATA_SIZE +
                                                           sizeof(SpecialDataSection)), 1);
     printf("\n%lu", entityRecordRead->fields[0].dataSize);
-    printf("\n%s", cutString((char *) entityRecordRead->fields[0].data, 0, entityRecord->fields[0].dataSize));
-//    printf("\n%s\n", dynamicString);
+//    printf("\n%s", cutString((char *) entityRecordRead->fields[0].data, 0, entityRecord->fields[0].dataSize));
+    printf("\n%s\n", dynamicString);
     free(headerSectionRead);
     free(headerSectionRead2);
     free(dynamicString);

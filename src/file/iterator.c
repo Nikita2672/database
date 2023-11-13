@@ -9,13 +9,13 @@
 #include "../../include/util/util.h"
 
 
-bool hasNext( Iterator *iterator, FILE *file) {
-     HeaderSection headerSection;
+bool hasNext(Iterator *iterator, FILE *file) {
+    HeaderSection headerSection;
     fseek(file, iterator->blockOffset, SEEK_SET);
-    fread(&headerSection, sizeof( HeaderSection), 1, file);
+    fread(&headerSection, sizeof(HeaderSection), 1, file);
     bool hasNextVariable = false;
     for (uint16_t i = iterator->currentPositionInBlock; i < headerSection.recordsNumber; i++) {
-         EntityRecord *entityRecord = readRecord(file, i, iterator->blockOffset, iterator->fieldsNumber);
+        EntityRecord *entityRecord = readRecord(file, i, iterator->blockOffset, iterator->fieldsNumber);
         bool valid = true;
         for (uint16_t j = 0; j < iterator->predicateNumber; j++) {
             bool result = checkPredicate(&iterator->predicate[j], entityRecord, iterator->fieldsNumber,
@@ -32,9 +32,9 @@ bool hasNext( Iterator *iterator, FILE *file) {
             return hasNextVariable;
         }
     }
-    fseek(file, iterator->blockOffset + sizeof( HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-     SpecialDataSection specialDataSection;
-    fread(&specialDataSection, sizeof( SpecialDataSection), 1, file);
+    fseek(file, iterator->blockOffset + sizeof(HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+    SpecialDataSection specialDataSection;
+    fread(&specialDataSection, sizeof(SpecialDataSection), 1, file);
     if (specialDataSection.nextBlockOffset != 0) {
         iterator->currentPositionInBlock = 0;
         iterator->blockOffset = specialDataSection.nextBlockOffset;
@@ -45,40 +45,40 @@ bool hasNext( Iterator *iterator, FILE *file) {
 }
 
 
-EntityRecord *next( Iterator *iterator, FILE *file) {
+EntityRecord *next(Iterator *iterator, FILE *file) {
     return readRecord(file, iterator->currentPositionInBlock - 1, iterator->blockOffset, iterator->fieldsNumber);
 }
 
-static EntityRecord *concatenateEntityRecords( EntityRecord *entityRecord1,
-                                               EntityRecord *entityRecord2, uint8_t fieldsNumber1,
+static EntityRecord *concatenateEntityRecords(EntityRecord *entityRecord1,
+                                              EntityRecord *entityRecord2, uint8_t fieldsNumber1,
                                               uint8_t fieldsNumber2) {
     if (entityRecord2 == NULL) return entityRecord1;
-     FieldValue *newFields = malloc(sizeof( FieldValue) * (fieldsNumber1 + fieldsNumber2));
-    memcpy(newFields, entityRecord1->fields, sizeof( FieldValue) * fieldsNumber1);
-    memcpy(newFields + fieldsNumber1, entityRecord2->fields, sizeof( FieldValue) * fieldsNumber2);
-     EntityRecord *entityRecord = malloc(sizeof( EntityRecord));
+    FieldValue *newFields = malloc(sizeof(FieldValue) * (fieldsNumber1 + fieldsNumber2));
+    memcpy(newFields, entityRecord1->fields, sizeof(FieldValue) * fieldsNumber1);
+    memcpy(newFields + fieldsNumber1, entityRecord2->fields, sizeof(FieldValue) * fieldsNumber2);
+    EntityRecord *entityRecord = malloc(sizeof(EntityRecord));
     entityRecord->fields = newFields;
     return entityRecord;
 }
 
 
- EntityRecord *nextWithJoin( Iterator *iterator1, const char *tableName,
-                                  FILE *file, uint8_t fieldNumber, char *fieldName) {
-     EntityRecord *entityRecord1 = NULL;
+EntityRecord *nextWithJoin(Iterator *iterator1, const char *tableName,
+                           FILE *file, uint8_t fieldNumber, char *fieldName) {
+    EntityRecord *entityRecord1 = NULL;
     if (hasNext(iterator1, file)) {
         entityRecord1 = next(iterator1, file);
     } else {
         return NULL;
     }
-     FieldValue fieldValue = entityRecord1->fields[fieldNumber];
-     Predicate predicate = {&fieldValue, fieldName, EQUALS};
-     Iterator *iterator2 = readEntityRecordWithCondition(file, tableName, &predicate, 1);
-     EntityRecord *entityRecord2 = NULL;
+    FieldValue fieldValue = entityRecord1->fields[fieldNumber];
+    Predicate predicate = {&fieldValue, fieldName, EQUALS};
+    Iterator *iterator2 = readEntityRecordWithCondition(file, tableName, &predicate, 1);
+    EntityRecord *entityRecord2 = NULL;
     if (hasNext(iterator2, file)) {
         entityRecord2 = next(iterator2, file);
     }
-     EntityRecord *entityRecord = concatenateEntityRecords(entityRecord1, entityRecord2,
-                                                                 iterator1->fieldsNumber,
-                                                                 iterator2->fieldsNumber);
+    EntityRecord *entityRecord = concatenateEntityRecords(entityRecord1, entityRecord2,
+                                                          iterator1->fieldsNumber,
+                                                          iterator2->fieldsNumber);
     return entityRecord;
 }
