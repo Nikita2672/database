@@ -6,20 +6,20 @@
 #ifndef LAB1_DATABLOCKS_H
 #define LAB1_DATABLOCKS_H
 
-struct specialDataSection {
+typedef struct {
     uint64_t previousBlockOffset;
     uint64_t nextBlockOffset;
-};
+} SpecialDataSection;
 
-struct headerSection {
+typedef struct {
     uint16_t pageNumber;
     uint16_t startEmptySpaceOffset;
     uint16_t endEmptySpaceOffset;
     uint8_t recordsNumber;
-};
+} HeaderSection;
 
-struct recordId {
+typedef struct {
     uint16_t offset;
     uint64_t length;
-};
+} RecordId;
 #endif //LAB1_DATABLOCKS_H

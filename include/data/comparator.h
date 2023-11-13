@@ -6,6 +6,6 @@
 #include <stdbool.h>
 #include "data.h"
 
-int8_t compare(struct FieldValue fieldValue1, struct FieldValue fieldValue2, enum DataType dataType);
+int8_t compare(FieldValue fieldValue1, FieldValue fieldValue2, enum DataType dataType);
 
 #endif //LAB1_COMPARATOR_H

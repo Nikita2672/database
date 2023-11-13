@@ -10,31 +10,30 @@
 #define MAX_FIELDS 256
 #define MAX_TABLES 1000
 
-struct NameTypeBlock {
+typedef struct {
     char fieldName[MAX_LENGTH_FIELD_NAME];
     enum DataType dataType;
-};
+} NameTypeBlock;
 
-struct tableOffsetBlock {
+typedef struct {
     bool isActive;
     char tableName[MAX_LENGTH_TABLE_NAME];
-    struct NameTypeBlock nameTypeBlock[MAX_FIELDS];
+    NameTypeBlock nameTypeBlock[MAX_FIELDS];
     uint8_t fieldsNumber;
     uint64_t firsTableBlockOffset;
     uint64_t lastTableBLockOffset;
-};
+} TableOffsetBlock;
 
-struct defineTablesBlock {
+typedef struct {
     uint32_t countTables;
-    struct tableOffsetBlock tableOffsetBlock[MAX_TABLES];
+    TableOffsetBlock tableOffsetBlock[MAX_TABLES];
     uint64_t emptySpaceOffset;
-};
+} DefineTablesBlock;
 
-struct NameTypeBlock *initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType);
+NameTypeBlock *initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType);
 
-struct tableOffsetBlock *initTableOffsetBlock(FILE *file, const char name[MAX_LENGTH_TABLE_NAME],
-                                              uint8_t fieldsNumber,
-                                              const struct NameTypeBlock nameTypeBlock[MAX_FIELDS]);
+TableOffsetBlock *initTableOffsetBlock(FILE *file, const char name[MAX_LENGTH_TABLE_NAME],
+                                              uint8_t fieldsNumber, NameTypeBlock nameTypeBlock[MAX_FIELDS]);
 
 #define LAB1_BLOCKS_H
 

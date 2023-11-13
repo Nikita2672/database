@@ -6,7 +6,7 @@
 #ifndef LAB1_QUERY_H
 #define LAB1_QUERY_H
 
-enum compare {
+enum Compare {
     MORE,
     LESS,
     EQUALS,
@@ -14,21 +14,21 @@ enum compare {
     LESS_OR_EQUALS
 };
 
-struct predicate {
-    struct FieldValue *comparableValue;
+typedef struct {
+    FieldValue *comparableValue;
     char *fieldName;
-    enum compare comparator;
-};
+    enum Compare comparator;
+} Predicate;
 
-struct query {
-    struct predicate *predicates;
+typedef struct {
+    Predicate *predicates;
     uint32_t predicatesNumber;
     char *tableName;
-};
+} Query;
 
-void freePredicate(struct predicate *predicate);
+void freePredicate(Predicate *predicate);
 
-bool checkPredicate(struct predicate *predicate, struct EntityRecord *entityRecord, uint16_t fieldsNumber,
-                    struct NameTypeBlock *nameTypeBlock);
+bool
+checkPredicate(Predicate *predicate, EntityRecord *entityRecord, uint16_t fieldsNumber, NameTypeBlock *nameTypeBlock);
 
 #endif //LAB1_QUERY_H

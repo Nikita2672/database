@@ -14,22 +14,22 @@ enum DataType {
 };
 
 
-struct FieldValue {
+typedef struct {
     void *data;
     uint64_t dataSize;
-};
+} FieldValue;
 
 
-struct linkNext {
+typedef struct {
     uint64_t blockOffset;
     uint16_t offsetInBlock;
     uint8_t fieldNumber;
     uint64_t positionInField;
     uint16_t idPosition;
-};
+} LinkNext;
 
-struct EntityRecord {
-    struct FieldValue *fields;
-    struct linkNext *linkNext;
-};
+typedef struct {
+    FieldValue *fields;
+    LinkNext *linkNext;
+} EntityRecord;
 #endif //LAB1_DATA_H
