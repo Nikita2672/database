@@ -6,13 +6,20 @@
 #include "../../include/query/query.h"
 #include "../../include/file/iterator.h"
 #include "../../include/util/util.h"
-#include <fcntl.h>
 #include <unistd.h>
 #include "../../include/platformic/cutfile.h"
 
+
+#ifdef _WIN32
+#define FILE_NAME "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\file.bin"
+#define FILE_NAME_1 "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\testInsert.bin"
+#define FILE_NAME_2 "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\data.bin"
+#else
 #define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
 #define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"
 #define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
+#endif
+
 
 #define BLOCK_SPACE sizeof (struct headerSection) + BLOCK_DATA_SIZE + sizeof (struct specialDataSection)
 
@@ -169,7 +176,7 @@ void test3() {
     assertEquals(*(int32_t *) entityRecord12->fields[3].data, 20, "value4", 3, 16);
     struct EntityRecord *entityRecord22 = readRecord(file, 1, 0, 4);
     assertEquals(*(double *) entityRecord22->fields[0].data, 123.3, "value1", 3, 18);
-    assertEqualsS(entityRecord22->fields[1].data, "Ksenia Kirillova", "value2", 3, 20);
+    assertEqualsS(cutString(entityRecord22->fields[1].data, 0, entityRecord22->fields[1].dataSize), "Ksenia Kirillova", "value2", 3, 20);
     assertEquals(*(bool *) entityRecord22->fields[2].data, 0, "value3", 3, 22);
     assertEquals(*(uint16_t *) entityRecord22->fields[3].data, 19, "value4", 3, 24);
     fseek(file, 0, SEEK_SET);
@@ -288,7 +295,7 @@ void test5() {
     bool isNext1 = hasNext(iterator, file);
     assertEquals(isNext1, true, "hasNext", 5, 1);
     struct EntityRecord *entityRecord1 = next(iterator, file);
-    assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 3);
+    assertEqualsS(cutString((char *) entityRecord1->fields[0].data, 0, entityRecord1->fields[0].dataSize), "Ksenia", "name", 5, 3);
     assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova",
                   "surname", 5, 4);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 6);
@@ -298,8 +305,8 @@ void test5() {
     bool isNext2 = hasNext(iterator, file);
     assertEquals(isNext2, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
-    assertEqualsS((char *) entityRecord1->fields[0].data, "Nikita", "name", 5, 8);
-    assertEqualsS((char *) entityRecord1->fields[1].data, "Ivanov", "surname", 5, 9);
+    assertEqualsS(cutString((char *) entityRecord1->fields[0].data, 0, entityRecord1->fields[0].dataSize), "Nikita", "name", 5, 8);
+    assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[0].dataSize), "Ivanov", "surname", 5, 9);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 20, "age", 5, 11);
     assertEquals(*(double *) entityRecord1->fields[3].data, 128, "score", 5, 7);
     assertEquals(*(bool *) entityRecord1->fields[4].data, true, "sex", 5, 10);
@@ -307,7 +314,7 @@ void test5() {
     bool isNext3 = hasNext(iterator, file);
     assertEquals(isNext3, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
-    assertEqualsS((char *) entityRecord1->fields[0].data, "Lubovv", "name", 5, 13);
+    assertEqualsS(cutString((char *) entityRecord1->fields[0].data, 0, entityRecord1->fields[0].dataSize), "Lubovv", "name", 5, 13);
     assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Vitalievna",
                   "surname", 5, 14);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 51, "age", 5, 16);
@@ -317,7 +324,7 @@ void test5() {
     bool isNext4 = hasNext(iterator, file);
     assertEquals(isNext4, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
-    assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 18);
+    assertEqualsS(cutString((char *) entityRecord1->fields[0].data, 0, entityRecord1->fields[0].dataSize), "Ksenia", "name", 5, 18);
     assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova",
                   "surname", 5, 19);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 21);
@@ -327,7 +334,7 @@ void test5() {
     bool isNext5 = hasNext(iterator, file);
     assertEquals(isNext5, true, "hasNext", 5, 1);
     entityRecord1 = next(iterator, file);
-    assertEqualsS((char *) entityRecord1->fields[0].data, "Ksenia", "name", 5, 23);
+    assertEqualsS(cutString((char *) entityRecord1->fields[0].data, 0, entityRecord1->fields[0].dataSize), "Ksenia", "name", 5, 23);
     assertEqualsS(cutString((char *) entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Kirillova",
                   "surname", 5, 24);
     assertEquals(*(uint16_t *) entityRecord1->fields[2].data, 19, "age", 5, 26);
@@ -353,8 +360,8 @@ void test6() {
     bool nextVal = hasNext(iterator, file);
     assertEquals(nextVal, true, "next", 6, 1);
     struct EntityRecord *entityRecord = next(iterator, file);
-    assertEqualsS((char *) entityRecord->fields[0].data, "Nikita", "name", 6, 3);
-    assertEqualsS((char *) entityRecord->fields[1].data, "Ivanov", "surname", 6, 4);
+    assertEqualsS(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Nikita", "name", 6, 3);
+    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Ivanov", "surname", 6, 4);
     assertEquals(*(uint16_t *) entityRecord->fields[2].data, 20, "age", 6, 6);
     assertEquals(*(double *) entityRecord->fields[3].data, 128, "score", 6, 2);
     assertEquals(*(bool *) entityRecord->fields[4].data, true, "sex", 6, 5);
@@ -366,7 +373,7 @@ void test6() {
     bool nextVal1 = hasNext(iterator1, file);
     assertEquals(nextVal1, true, "next", 6, 7);
     struct EntityRecord *pEntityRecord = next(iterator1, file);
-    assertEqualsS(pEntityRecord->fields[0].data, "Nikita", "name", 6, 8);
+    assertEqualsS(cutString(pEntityRecord->fields[0].data, 0, pEntityRecord->fields[0].dataSize), "Nikita", "name", 6, 8);
     fclose(file);
 }
 
@@ -461,7 +468,7 @@ void test7() {
     bool has = hasNext(iterator, file1);
     assertEquals(has, true, "hasNext", 7, 13);
     struct EntityRecord *entityRecord = next(iterator, file1);
-    assertEqualsS(entityRecord->fields[0].data, "Nikita", "name", 7, 14);
+    assertEqualsS(cutString(entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Nikita", "name", 7, 14);
     deleteRecordFromTable(file1, "User", predicate, 1);
     struct iterator *iterator1 = readEntityRecordWithCondition(file1, "User", predicate, 1);
     bool has1 = hasNext(iterator1, file1);
@@ -483,7 +490,7 @@ void test7() {
     bool has2 = hasNext(iterator3, file1);
     assertEquals(has2, true, "hasNext", 7, 22);
     struct EntityRecord *entityRecord1 = next(iterator3, file1);
-    assertEqualsS(entityRecord1->fields[0].data, "Ksenia", "surname", 7, 23);
+    assertEqualsS(cutString(entityRecord1->fields[0].data, 0, entityRecord1->fields[0].dataSize), "Ksenia", "surname", 7, 23);
 
 
     //delete several records in 1 operation
@@ -593,7 +600,7 @@ void test9() {
     bool nextVal = hasNext(iterator1, file);
     assertEquals(nextVal, true, "hasNext", 9, 1);
     struct EntityRecord *entityRecord = next(iterator1, file);
-    assertEqualsS((char *) entityRecord->fields[0].data, "Nikita", "name", 9, 2);
+    assertEqualsS(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Nikita", "name", 9, 2);
     assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Pesterev",
                   "surname", 9, 3);
     assertEquals(*(uint16_t *) entityRecord->fields[2].data, 20, "age", 9, 4);
@@ -708,12 +715,12 @@ void test10() {
 
     struct iterator *joinIterator = readEntityRecordWithCondition(file, "Employee", NULL, 0);
     struct EntityRecord *entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
-    assertEqualsS((char *) entityRecord->fields[0].data, "Nikita", "Name", 10, 0);
-    assertEqualsS((char *) entityRecord->fields[1].data, "Ivanov", "Surname", 10, 1);
+    assertEqualsS(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Nikita", "Name", 10, 0);
+    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Ivanov", "Surname", 10, 1);
     assertEquals(*(int32_t *) entityRecord->fields[2].data, 20, "Age", 10, 2);
     assertEquals(*(int32_t *) entityRecord->fields[3].data, 1, "DepartmentId", 10, 3);
     assertEquals(*(int32_t *) entityRecord->fields[4].data, 1, "DepartmentId", 10, 4);
-    assertEqualsS((char *) entityRecord->fields[5].data, "Entropy", "Name", 10, 5);
+    assertEqualsS(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize), "Entropy", "Name", 10, 5);
     assertEqualsS(cutString((char *) entityRecord->fields[6].data, 0, entityRecord->fields[6].dataSize),
                   "Command develop Accounting and Invoicing modules",
                   "Description", 10, 6);
@@ -722,7 +729,7 @@ void test10() {
     entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
     assertEqualsS(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Ivan", "Name",
                   10, 7);
-    assertEqualsS((char *) entityRecord->fields[1].data, "Bobrov", "Surname", 10, 8);
+    assertEqualsS(cutString((char *) entityRecord->fields[1].data, 0, entityRecord->fields[1].dataSize), "Bobrov", "Surname", 10, 8);
     assertEquals(*(int32_t *) entityRecord->fields[2].data, 21, "Age", 10, 9);
     assertEquals(*(int32_t *) entityRecord->fields[3].data, 2, "DepartmentId", 10, 10);
     assertEquals(*(int32_t *) entityRecord->fields[4].data, 2, "DepartmentId", 10, 11);
@@ -794,7 +801,7 @@ void test12() {
                                               {"Description", STRING},
                                               {"Score",       DOUBLE}};
     printf("\n");
-    for (uint16_t i = 50; i < 100; i++) {
+    for (uint16_t i = 40; i < 100; i++) {
         struct EntityRecord *entityRecordTest = malloc(sizeof(struct EntityRecord));
 
         int32_t *ageTest = malloc(sizeof(int32_t));
@@ -802,13 +809,13 @@ void test12() {
 
         bool *sexTest = malloc(sizeof(bool));
         *sexTest = false;
-
+        uint64_t length = strlen("If we have a chatterbox here, then I have such news: I've come home, I haven't seen my parents for 3 months)");
         char *descriptionTest = malloc(sizeof(char) *
-                                       strlen("Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)"));
+                                       length);
         strncpy(descriptionTest,
-                "Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)",
+                "If we have a chatterbox here, then I have such news: I've come home, I haven't seen my parents for 3 months)",
                 sizeof(char) *
-                strlen("Если у нас тут прям болталка, то у меня такие новости: я вот приехала домой, родителей не видела 3 месяца)"));
+                length);
 
         double *scoreTest = malloc(sizeof(double));
         *scoreTest = 123.324;
@@ -820,7 +827,7 @@ void test12() {
         fieldValueTest[1].data = sexTest;
         fieldValueTest[1].dataSize = sizeof(bool);
         fieldValueTest[2].data = descriptionTest;
-        fieldValueTest[2].dataSize = (sizeof(char) * strlen(descriptionTest));
+        fieldValueTest[2].dataSize = (sizeof(char) * length);
         fieldValueTest[3].data = scoreTest;
         fieldValueTest[3].dataSize = sizeof(double);
 
@@ -831,8 +838,8 @@ void test12() {
         assertEquals(*(int32_t *) entityRecordCompound->fields[0].data, *ageTest, "age", 12, 4 * i);
         assertEquals(*(bool *) entityRecordCompound->fields[1].data, false, "sexTest", 12, 4 * i + 1);
         assertEqualsS(
-                cutString((char *) entityRecordCompound->fields[2].data, 0, entityRecordCompound->fields[2].dataSize),
-                descriptionTest, "descriptionTest", 12, 4 * i + 2);
+                cutString((char *) entityRecordCompound->fields[2].data, 0, length),
+                cutString(descriptionTest, 0, length), "descriptionTest", 12, 4 * i + 2);
         assertEquals(*(double *) entityRecordCompound->fields[3].data, 123.324, "scoreTest", 12, 4 * i + 3);
         if (entityRecordCompound->fields[0].data != NULL) free(entityRecordCompound->fields[0].data);
         if (entityRecordCompound->fields[1].data != NULL) free(entityRecordCompound->fields[1].data);
@@ -900,9 +907,9 @@ void test13() {
     struct EntityRecord *entityRecordRead = readRecord(file, 0, offset1 +
                                                                 (sizeof(struct headerSection) + BLOCK_DATA_SIZE +
                                                                  sizeof(struct specialDataSection)), 1);
-    printf("\n%lu", entityRecordRead->fields[0].dataSize);
-    printf("\n%s", (char *) entityRecordRead->fields[0].data);
-    printf("\n%s\n", dynamicString);
+    printf("\n%llu", entityRecordRead->fields[0].dataSize);
+    printf("\n%s", cutString((char *) entityRecordRead->fields[0].data, 0, entityRecord->fields[0].dataSize));
+//    printf("\n%s\n", dynamicString);
     free(headerSectionRead);
     free(headerSectionRead2);
     free(dynamicString);
