@@ -28,6 +28,8 @@ typedef struct {
 
 void freePredicate(Predicate *predicate);
 
+void freeQuery(Query *query);
+
 bool
 checkPredicate(Predicate *predicate, EntityRecord *entityRecord, uint16_t fieldsNumber, NameTypeBlock *nameTypeBlock);
 

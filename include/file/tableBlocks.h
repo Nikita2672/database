@@ -30,10 +30,9 @@ typedef struct {
     uint64_t emptySpaceOffset;
 } DefineTablesBlock;
 
-NameTypeBlock *initNameTypeBlock(const char fieldName[MAX_LENGTH_FIELD_NAME], enum DataType dataType);
+NameTypeBlock *initNameTypeBlock(const char *fieldName, enum DataType dataType);
 
-TableOffsetBlock *initTableOffsetBlock(FILE *file, const char name[MAX_LENGTH_TABLE_NAME],
-                                              uint8_t fieldsNumber, NameTypeBlock nameTypeBlock[MAX_FIELDS]);
+TableOffsetBlock *initTableOffsetBlock(FILE *file, const char *name, uint8_t fieldsNumber, NameTypeBlock *nameTypeBlock);
 
 #define LAB1_BLOCKS_H
 

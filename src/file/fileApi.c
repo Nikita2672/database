@@ -101,7 +101,7 @@ void writeTableOffsetBlock(FILE *file,  TableOffsetBlock *tableOffsetBlock) {
 }
 
 
-uint64_t countNeededSpace( EntityRecord *entityRecord, uint8_t fieldsNumber) {
+static uint64_t countNeededSpace( EntityRecord *entityRecord, uint8_t fieldsNumber) {
     uint16_t neededSpace = sizeof( RecordId);
     for (uint16_t i = 0; i < fieldsNumber; i++) {
         neededSpace += sizeof(uint64_t);
@@ -111,7 +111,7 @@ uint64_t countNeededSpace( EntityRecord *entityRecord, uint8_t fieldsNumber) {
     return neededSpace;
 }
 
-void utilInsert(FILE * file, uint64_t offset,  HeaderSection headerSection, uint16_t fieldsNumber, uint16_t beforeWriteOffset,
+static void utilInsert(FILE * file, uint64_t offset,  HeaderSection headerSection, uint16_t fieldsNumber, uint16_t beforeWriteOffset,
                  EntityRecord *entityRecord) {
     fseek(file, offset + sizeof( HeaderSection) + headerSection.startEmptySpaceOffset, SEEK_SET);
     uint16_t writtenData = 0;
@@ -146,7 +146,7 @@ void utilInsert(FILE * file, uint64_t offset,  HeaderSection headerSection, uint
     fwrite(&headerSection, sizeof( HeaderSection), 1, file);
 }
 
-void utilAddBlock(FILE* file, uint64_t offset,  HeaderSection headerSection,  TableOffsetBlock *tableOffsetBlock) {
+static void utilAddBlock(FILE* file, uint64_t offset,  HeaderSection headerSection,  TableOffsetBlock *tableOffsetBlock) {
     fseek(file, offset + sizeof( HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
      SpecialDataSection specialDataSection;
     fread(&specialDataSection, sizeof( SpecialDataSection), 1, file);
@@ -157,7 +157,7 @@ void utilAddBlock(FILE* file, uint64_t offset,  HeaderSection headerSection,  Ta
     fwrite(&specialDataSection, sizeof( SpecialDataSection), 1, file);
 }
 
-void updateTableOffsetBlock( TableOffsetBlock *tableOffsetBlock,  LinkNext *linkNext) {
+static void updateTableOffsetBlock( TableOffsetBlock *tableOffsetBlock,  LinkNext *linkNext) {
     uint8_t fieldsNumber = tableOffsetBlock->fieldsNumber;
     uint8_t startPosition;
     if (linkNext->positionInField != 0) {
@@ -278,7 +278,7 @@ void insertRecord(FILE *file,  EntityRecord *entityRecord,  TableOffsetBlock *ta
 }
 
 
-void deleteTableOffsetBlock(FILE *file, const char *tableName) {
+static void deleteTableOffsetBlock(FILE *file, const char *tableName) {
      TableOffsetBlock *tableOffsetBlock = malloc(sizeof( TableOffsetBlock));
     fseek(file, sizeof(uint32_t), SEEK_SET);
     for (uint16_t i = 0; i < MAX_TABLES; i++) {
@@ -331,7 +331,7 @@ void insertRecordIntoTable(FILE *file,  EntityRecord *entityRecord, const char *
     return iterator;
 }
 
-void reverseDataArray( RecordId *array, size_t num_elements) {
+static void reverseDataArray( RecordId *array, size_t num_elements) {
     uint16_t start = 0;
     int16_t end = num_elements - 1;
 
@@ -361,7 +361,7 @@ void rebuildArrayOfRecordIds(unsigned char *buffer,  RecordId *recordIdArray, ui
     reverseDataArray(recordIdArray, (recordsNumber - 1));
 }
 
-void deleteRecord(FILE *file,  Iterator *iterator, unsigned char *buffer) {
+static void deleteRecord(FILE *file,  Iterator *iterator, unsigned char *buffer) {
      HeaderSection headerSection;
      SpecialDataSection specialDataSection;
      RecordId recordId;
@@ -468,7 +468,7 @@ void deleteTable(const char *tableName, FILE *file) {
     unsigned char *buffer2 = malloc(fieldValue->dataSize - capacity);
      FieldValue *fieldValue2 = malloc(sizeof( FieldValue));
     fieldValue2->dataSize = fieldValue->dataSize - capacity;
-    memcpy(buffer2, fieldValue->data + capacity, (fieldValue->dataSize - capacity));
+    memcpy(buffer2, (char *)fieldValue->data + capacity, (fieldValue->dataSize - capacity));
     fieldValue2->data = buffer2;
 
      FieldValue **fieldValues = ( FieldValue **) malloc(2 * sizeof( FieldValue *));
@@ -567,7 +567,7 @@ void deleteTable(const char *tableName, FILE *file) {
             entityRecord->fields[i].dataSize = entityRecord1->fields[i].dataSize;
             continue;
         }
-        if (i == entityRecord1->linkNext->fieldNumber && entityRecord1->linkNext->fieldNumber >= 0) {
+        if (i == entityRecord1->linkNext->fieldNumber) {
              FieldValue* fieldValue = concatenateFieldValues(&entityRecord1->fields[i], &entityRecord2->fields[fieldsNumber2]);
             entityRecord->fields[i].data = fieldValue->data;
             entityRecord->fields[i].dataSize = fieldValue->dataSize;

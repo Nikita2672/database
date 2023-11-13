@@ -49,7 +49,7 @@ EntityRecord *next( Iterator *iterator, FILE *file) {
     return readRecord(file, iterator->currentPositionInBlock - 1, iterator->blockOffset, iterator->fieldsNumber);
 }
 
- EntityRecord *concatenateEntityRecords( EntityRecord *entityRecord1,
+static EntityRecord *concatenateEntityRecords( EntityRecord *entityRecord1,
                                                EntityRecord *entityRecord2, uint8_t fieldsNumber1,
                                               uint8_t fieldsNumber2) {
     if (entityRecord2 == NULL) return entityRecord1;
