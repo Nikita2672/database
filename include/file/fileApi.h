@@ -2,7 +2,7 @@
 #define LAB1_FILEAPI_H
 
 #include <stdlib.h>
-#include <bits/types/FILE.h>
+#include <stdio.h>
 #include "../../include/data/data.h"
 #include "dataBlocks.h"
 

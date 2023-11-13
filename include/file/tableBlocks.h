@@ -1,4 +1,4 @@
-#include <bits/types/FILE.h>
+#include <stdio.h>
 #include "../../include/data/data.h"
 #include "stdbool.h"
 #include "stdlib.h"
