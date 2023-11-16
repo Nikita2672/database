@@ -58,6 +58,20 @@ void writeEmptySpaceOffset(FILE *file, uint64_t offset) {
     fwrite(&emptySpaceOffset, sizeof(uint64_t), 1, file);
 }
 
+void writeLastTableBlockOffset(FILE *file, uint64_t lastTableBlockOffset, char *tableName) {
+    TableOffsetBlock *tableOffsetBlock = malloc(sizeof(TableOffsetBlock));
+    fseek(file, sizeof(uint32_t), SEEK_SET);
+    for (uint16_t i = 0; i < MAX_TABLES; i++) {
+        fread(tableOffsetBlock, sizeof(TableOffsetBlock), 1, file);
+        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
+            fseek(file, - sizeof (TableOffsetBlock), SEEK_CUR);
+            tableOffsetBlock->lastTableBLockOffset = lastTableBlockOffset;
+            fwrite(tableOffsetBlock, sizeof (TableOffsetBlock), 1,  file);
+            fflush(file);
+        }
+    }
+    free(tableOffsetBlock);
+}
 
 TableOffsetBlock *readTableOffsetBlock(FILE *file, uint16_t tablePosition) {
     if (tablePosition > 1000) {
@@ -152,6 +166,7 @@ static void utilAddBlock(FILE *file, uint64_t offset, HeaderSection headerSectio
     SpecialDataSection specialDataSection;
     fread(&specialDataSection, sizeof(SpecialDataSection), 1, file);
     uint64_t newBlockOffset = allocateBlock(file, offset, headerSection.pageNumber + 1);
+    writeLastTableBlockOffset(file, newBlockOffset, tableOffsetBlock->tableName);
     specialDataSection.nextBlockOffset = newBlockOffset;
     tableOffsetBlock->lastTableBLockOffset = newBlockOffset;
     fseek(file, offset + sizeof(HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
@@ -305,9 +320,6 @@ void insertRecordIntoTable(FILE *file, EntityRecord *entityRecord, const char *t
         printf("There is no %s table\n", tableName);
         return;
     } else {
-        HeaderSection headerSection;
-        fseek(file, tableOffsetBlock->firsTableBlockOffset, SEEK_CUR);
-        fread(&headerSection, sizeof(HeaderSection), 1, file);
         insertRecord(file, entityRecord, tableOffsetBlock);
         free(tableOffsetBlock);
         return;

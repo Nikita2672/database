@@ -13,6 +13,9 @@ bool hasNext(Iterator *iterator, FILE *file) {
     HeaderSection headerSection;
     fseek(file, iterator->blockOffset, SEEK_SET);
     fread(&headerSection, sizeof(HeaderSection), 1, file);
+    SpecialDataSection specialDataSection;
+    fseek(file, BLOCK_DATA_SIZE, SEEK_CUR);
+    fread(&specialDataSection, sizeof (specialDataSection), 1, file);
     bool hasNextVariable = false;
     for (uint16_t i = iterator->currentPositionInBlock; i < headerSection.recordsNumber; i++) {
         EntityRecord *entityRecord = readRecord(file, i, iterator->blockOffset, iterator->fieldsNumber);
@@ -32,9 +35,6 @@ bool hasNext(Iterator *iterator, FILE *file) {
             return hasNextVariable;
         }
     }
-    fseek(file, iterator->blockOffset + sizeof(HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-    SpecialDataSection specialDataSection;
-    fread(&specialDataSection, sizeof(SpecialDataSection), 1, file);
     if (specialDataSection.nextBlockOffset != 0) {
         iterator->currentPositionInBlock = 0;
         iterator->blockOffset = specialDataSection.nextBlockOffset;

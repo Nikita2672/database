@@ -1,27 +1,7 @@
-#include "../../include/file/fileApi.h"
-#include "stdio.h"
-#include "../../include/file/tableBlocks.h"
-#include <string.h>
-#include "../../include/util/tests.h"
-#include "../../include/query/query.h"
-#include "../../include/file/iterator.h"
-#include "../../include/util/util.h"
-#include <unistd.h>
-#include "../../include/platformic/cutfile.h"
+#include "../../include/util/unitTests.h"
 
 
-#ifdef _WIN32
-#define FILE_NAME "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\file.bin"
-#define FILE_NAME_1 "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\testInsert.bin"
-#define FILE_NAME_2 "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\data.bin"
-#else
-#define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
-#define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"
-#define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
-#endif
-
-
-#define BLOCK_SPACE sizeof (HeaderSection) + BLOCK_DATA_SIZE + sizeof (SpecialDataSection)
+#define BLOCK_SPACE (sizeof (HeaderSection) + BLOCK_DATA_SIZE + sizeof (SpecialDataSection))
 
 static void
 assertEquals(const long double found, const double expected, char *fieldName, uint8_t testNumber, uint8_t position) {
@@ -852,7 +832,7 @@ void test12(void) {
 // test reading and writing entities which are separated
 void test13(void) {
     FILE *file = fopen(FILE_NAME_1, "rb+");
-    ftruncate(fileno(file), 0);
+    cutFile(file, 0);
     int size = 4000;
     char *dynamicString = malloc((size * 5 + 1) * sizeof(char));
     int index = 0;
