@@ -18,7 +18,11 @@
 #define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"
 #define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
 
-void testInsertPerformance(void);
+void testInsertPerformance(uint32_t amountData);
+
+void testUpdatePerformance(void );
+
+void testDeletePerformance(void );
 
 #endif
 #endif //LLP_TESTPERFOMANCE_H

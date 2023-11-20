@@ -569,7 +569,7 @@ void test9(void) {
     FieldValue fieldValue25 = {&sex2, sizeof(bool)};
     FieldValue array2[5] = {fieldValue21, fieldValue22, fieldValue23, fieldValue24, fieldValue25};
     EntityRecord entityRecord2 = {array2, NULL};
-    updateRecordFromTable(file, "User", predicate, 1, &entityRecord2);
+    updateRecordsFromTable(file, "User", predicate, 1, &entityRecord2);
 
     FieldValue fieldValue1 = {name2, sizeof(char) * strlen(name2)};
     Predicate predicate1[1] = {{&fieldValue1, "Name", EQUALS}};

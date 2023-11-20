@@ -422,25 +422,22 @@ static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer) 
 
 void deleteRecordFromTable(FILE *file, const char *tableName, Predicate *predicate,
                            uint8_t predicateNumber) {
-    uint64_t recordsNumber = 0;
     Iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
-    while (hasNext(iterator, file)) recordsNumber++;
-
     unsigned char *buffer = malloc(BLOCK_SIZE);
-    for (uint64_t i = 0; i < recordsNumber; i++) {
-        iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
-        hasNext(iterator, file);
+    while (hasNext(iterator, file)) {
         deleteRecord(file, iterator, buffer);
+        iterator->currentPositionInBlock -= 1;
     }
     free(buffer);
 }
 
-void updateRecordFromTable(FILE *file, const char *tableName, Predicate *predicate,
-                           uint8_t predicateNumber, EntityRecord *entityRecord) {
+void updateRecordsFromTable(FILE *file, const char *tableName, Predicate *predicate,
+                            uint8_t predicateNumber, EntityRecord *entityRecord) {
     Iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
     unsigned char *buffer = malloc(BLOCK_SIZE);
-    if (hasNext(iterator, file)) {
+    while (hasNext(iterator, file)) {
         deleteRecord(file, iterator, buffer);
+        iterator->currentPositionInBlock -= 1;
         insertRecordIntoTable(file, entityRecord, tableName);
     }
     free(buffer);

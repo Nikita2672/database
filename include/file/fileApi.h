@@ -40,8 +40,8 @@ void deleteRecordFromTable(FILE *file, const char *tableName, Predicate *predica
 void rebuildArrayOfRecordIds(unsigned char *buffer, RecordId *recordIdArray, uint8_t recordsNumber,
                              uint16_t positionToDelete, uint64_t deletedRecordLength);
 
-void updateRecordFromTable(FILE *file, const char *tableName, Predicate *predicate,
-                           uint8_t predicateNumber, EntityRecord *entityRecord);
+void updateRecordsFromTable(FILE *file, const char *tableName, Predicate *predicate,
+                            uint8_t predicateNumber, EntityRecord *entityRecord);
 
 TableOffsetBlock *findTableOffsetBlock(FILE *file, const char *tableName);
 

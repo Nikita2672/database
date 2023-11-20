@@ -2,7 +2,7 @@
 #include "../include/util/unitTests.h"
 #include "../include/util/testPerfomance.h"
 
-int main(void) {
+static void unitTest(void ) {
     test1();
     test2();
     test3();
@@ -15,7 +15,17 @@ int main(void) {
     test10();
     test11();
     test12();
-//    test13();
-    testInsertPerformance();
+}
+
+static void performanceTest(void ) {
+    testInsertPerformance(1000);
+    testUpdatePerformance();
+    testDeletePerformance();
+}
+
+int main(void) {
+    unitTest();
+//    performanceTest();
+//    testInsertPerformance(1000000);
     return 0;
 }
