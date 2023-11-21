@@ -1,6 +1,8 @@
 #include <stdint-gcc.h>
 #include "../../include/util/util.h"
 #include "string.h"
+#include "file/iterator.h"
+#include "file/fileApi.h"
 
 void printEntityRecord(EntityRecord *entityRecord, uint16_t fieldsNumber, NameTypeBlock *nameTypeBlock) {
     for (uint16_t i = 0; i < fieldsNumber; i++) {
@@ -54,4 +56,15 @@ void freeEntityRecord(EntityRecord *entityRecord, uint16_t fieldsNumber) {
     free(entityRecord->fields);
     free(entityRecord->linkNext);
     free(entityRecord);
+}
+
+void printMetaTableRecords(FILE* file) {
+    Iterator *iteratorMeta = readEntityRecordWithCondition(file, "Meta", NULL, 0);
+    NameTypeBlock nameTypeBlocksMeta = {"Offset", STRING};
+    while (hasNext(iteratorMeta, file)) {
+        EntityRecord *entityRecordMeta = next(iteratorMeta, file);
+        printEntityRecord(entityRecordMeta, 1, &nameTypeBlocksMeta);
+        freeEntityRecord(entityRecordMeta, 1);
+    }
+    freeIterator(iteratorMeta);
 }

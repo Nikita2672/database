@@ -13,4 +13,6 @@ uint64_t getFileSize(FILE *file);
 
 void freeEntityRecord(EntityRecord *entityRecord, uint16_t fieldsNumber);
 
+void printMetaTableRecords(FILE * file);
+
 #endif //LAB1_UTIL_H
