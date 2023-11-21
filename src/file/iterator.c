@@ -82,3 +82,8 @@ EntityRecord *nextWithJoin(Iterator *iterator1, const char *tableName,
                                                           iterator2->fieldsNumber);
     return entityRecord;
 }
+
+void freeIterator(Iterator* iterator) {
+    free(iterator->nameTypeBlock);
+    free(iterator);
+}
