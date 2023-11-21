@@ -1,19 +1,64 @@
 #include "util/testPerfomance.h"
+#include "util/unitTests.h"
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifdef _WIN32
-#define FILE_INSERT_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\insert_performance_data.txt"
-#define FILE_UPDATE_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\update_performance_data.txt"
-#define FILE_DELETE_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\delete_performance_data.txt"
-#else
-#define FILE_INSERT_DATA "/home/iwaa0303/CLionProjects/database/src/util/insert_performance_data.txt"
-#define FILE_UPDATE_DATA "/home/iwaa0303/CLionProjects/database/src/util/update_performance_data.txt"
-#define FILE_DELETE_DATA "/home/iwaa0303/CLionProjects/database/src/util/delete_performance_data.txt"
-#endif
+EntityRecord *buildEntityRecord(void ) {
+    char *name = malloc(sizeof(char) * (strlen("Nikita") + 1)); // +1 for the null terminator
+    strcpy(name, "Nikita");
 
+    char *surname = malloc(sizeof(char) * (strlen("Ivanov") + 1));
+    strcpy(surname, "Ivanov");
+
+    int32_t *age = malloc(sizeof(int32_t));
+    *age = 20;
+
+    double *score = malloc(sizeof(double));
+    *score = 123.34;
+
+    bool *sex = malloc(sizeof(bool));
+    *sex = true;
+
+    FieldValue fieldValue1 = {name, sizeof(char) * (strlen(name) + 1)};
+    FieldValue fieldValue2 = {surname, sizeof(char) * (strlen(surname) + 1)};
+    FieldValue fieldValue3 = {age, sizeof(int32_t)};
+    FieldValue fieldValue4 = {score, sizeof(double)};
+    FieldValue fieldValue5 = {sex, sizeof(bool)};
+
+    FieldValue *fields = malloc(sizeof(FieldValue) * 5);
+    fields[0] = fieldValue1;
+    fields[1] = fieldValue2;
+    fields[2] = fieldValue3;
+    fields[3] = fieldValue4;
+    fields[4] = fieldValue5;
+
+    EntityRecord *entityRecord = malloc(sizeof(EntityRecord));
+    entityRecord->fields = fields;
+    entityRecord->linkNext = NULL;
+    return entityRecord;
+}
+
+NameTypeBlock *buildNameTypeBlock(void ) {
+    NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
+    NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
+    NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
+    NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
+    NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
+    NameTypeBlock *nameTypeBlocks = malloc(sizeof (NameTypeBlock) * 5);
+    nameTypeBlocks[0] = *nameTypeBlock1;
+    nameTypeBlocks[1] = *nameTypeBlock2;
+    nameTypeBlocks[2] = *nameTypeBlock3;
+    nameTypeBlocks[3] = *nameTypeBlock4;
+    nameTypeBlocks[4] = *nameTypeBlock5;
+    free(nameTypeBlock1);
+    free(nameTypeBlock2);
+    free(nameTypeBlock3);
+    free(nameTypeBlock4);
+    free(nameTypeBlock5);
+    return nameTypeBlocks;
+}
 
 void testInsertPerformance(int64_t amountData) {
     FILE *fileData = fopen(FILE_INSERT_DATA, "r+");
@@ -23,59 +68,27 @@ void testInsertPerformance(int64_t amountData) {
     cutFile(file, 0);
     writeEmptyTablesBlock(file);
 
-    NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
-    NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
-    NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
-    NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
-    NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
-
-    // 1 table
-    NameTypeBlock nameTypeBlocks[5] = {
-            *nameTypeBlock1,
-            *nameTypeBlock2,
-            *nameTypeBlock3,
-            *nameTypeBlock4,
-            *nameTypeBlock5
-    };
+    NameTypeBlock *nameTypeBlocks = buildNameTypeBlock();
     TableOffsetBlock *writtenTableOffsetBlock1 = initTableOffsetBlock(file, "Users", 5, nameTypeBlocks);
     writeTableOffsetBlock(file, writtenTableOffsetBlock1);
 
-    char *name;
-    name = "Nikita";
-    char *surname;
-    surname = "Ivanov";
-    int32_t *age = malloc(sizeof(int32_t));
-    *age = 20;
-    double *score = malloc(sizeof(double));
-    *score = 123.34;
-    bool *sex = malloc(sizeof(bool));
-    *sex = true;
-    FieldValue fieldValue1 = {name, sizeof(char) * strlen(name)};
-    FieldValue fieldValue2 = {surname, sizeof(char) * strlen(surname)};
-    FieldValue fieldValue3 = {age, sizeof(int32_t)};
-    FieldValue fieldValue4 = {score, sizeof(score)};
-    FieldValue fieldValue5 = {sex, sizeof(bool)};
-    FieldValue *fields = malloc(sizeof(FieldValue) * 5);
-    fields[0] = fieldValue1;
-    fields[1] = fieldValue2;
-    fields[2] = fieldValue3;
-    fields[3] = fieldValue4;
-    fields[4] = fieldValue5;
-    EntityRecord *entityRecord = malloc(sizeof(EntityRecord));
-    entityRecord->fields = fields;
-    entityRecord->linkNext = NULL;
+    EntityRecord *entityRecord = buildEntityRecord();
 
     for (int32_t i = 0; i < amountData; i++) {
         int32_t *newData = malloc(sizeof(int32_t));
         *newData = i;
-        fields[2].data = newData;
+        entityRecord->fields[2].data = newData;
         gettimeofday(&start, NULL);
         insertRecordIntoTable(file, entityRecord, "Users");
         gettimeofday(&end, NULL);
         elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
         fprintf(fileData, "%d, %f\n", i + 1, elapsed_time);
-        free(newData);
+        if (i < amountData - 1) {
+            free(newData);
+        }
     }
+    freeEntityRecord(entityRecord, 5);
+    free(nameTypeBlocks);
     fclose(file);
     fclose(fileData);
 }
@@ -84,34 +97,13 @@ void testUpdatePerformance(void ) {
     struct timeval start, end;
     double elapsed_time;
     FILE *fileData = fopen(FILE_UPDATE_DATA, "r+");
-    char *name;
-    name = "Nikita";
-    char *surname;
-    surname = "Ivanov";
-    int32_t *age = malloc(sizeof(int32_t));
-    *age = 20;
-    double *score = malloc(sizeof(double));
-    *score = 123.34;
-    bool *sex = malloc(sizeof(bool));
-    *sex = true;
-    FieldValue fieldValue1 = {name, sizeof(char) * strlen(name)};
-    FieldValue fieldValue2 = {surname, sizeof(char) * strlen(surname)};
-    FieldValue fieldValue3 = {age, sizeof(int32_t)};
-    FieldValue fieldValue4 = {score, sizeof(score)};
-    FieldValue fieldValue5 = {sex, sizeof(bool)};
-    FieldValue *fields = malloc(sizeof(FieldValue) * 5);
-    fields[0] = fieldValue1;
-    fields[1] = fieldValue2;
-    fields[2] = fieldValue3;
-    fields[3] = fieldValue4;
-    fields[4] = fieldValue5;
-    EntityRecord *entityRecord = malloc(sizeof(EntityRecord));
-    entityRecord->fields = fields;
-    entityRecord->linkNext = NULL;
+    EntityRecord *entityRecord = buildEntityRecord();
     int32_t comparableAge = 12;
     FieldValue  fieldValue = {&comparableAge, sizeof (int32_t)};
     Predicate predicate = {&fieldValue, "Age", LESS};
-
+    int32_t *age = malloc(sizeof (int32_t));
+    *age = 20;
+    entityRecord->fields[2].data = age;
 
     for (uint16_t i = 0; i < 400; i++) {
         testInsertPerformance(i);
@@ -123,9 +115,7 @@ void testUpdatePerformance(void ) {
         fprintf(fileData, "%d, %f\n", i + 1, elapsed_time);
         fclose(file);
     }
-    free(age);
-    free(score);
-    free(sex);
+    freeEntityRecord(entityRecord, 5);
     fclose(fileData);
 }
 
@@ -149,35 +139,39 @@ void testDeletePerformance(void ) {
     fclose(fileData);
 }
 
+double testDeleteInsertPerformance(int64_t insertAmount, int32_t deleteAmount) {
+    struct timeval start, end;
+    double elapsed_time;
+    FILE *file = fopen(FILE_NAME, "rb+");
+    EntityRecord *entityRecord = buildEntityRecord();
+    gettimeofday(&start, NULL);
+    for (int32_t i = 0; i < insertAmount; i++) {
+        int32_t *newData = malloc(sizeof(int32_t));
+        *newData = i;
+        entityRecord->fields[2].data = newData;
+        insertRecordIntoTable(file, entityRecord, "Users");
+        if (i < insertAmount - 1) {
+            free(newData);
+        }
+    }
+    gettimeofday(&end, NULL);
+    elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
+    freeEntityRecord(entityRecord, 5);
+    int32_t age = deleteAmount;
+    FieldValue fieldValue = {&age, sizeof (int32_t)};
+    Predicate predicate = {&fieldValue, "Age", LESS_OR_EQUALS};
 
-//    NameTypeBlock *nameTypeBlock1 = initNameTypeBlock("Name", STRING);
-//    NameTypeBlock *nameTypeBlock2 = initNameTypeBlock("Surname", STRING);
-//    NameTypeBlock *nameTypeBlock3 = initNameTypeBlock("Age", INT);
-//    NameTypeBlock *nameTypeBlock4 = initNameTypeBlock("Score", DOUBLE);
-//    NameTypeBlock *nameTypeBlock5 = initNameTypeBlock("Sex", BOOL);
-//    // 1 table
-//    NameTypeBlock nameTypeBlocks[5] = {
-//            *nameTypeBlock1,
-//            *nameTypeBlock2,
-//            *nameTypeBlock3,
-//            *nameTypeBlock4,
-//            *nameTypeBlock5
-//    };
-//    int32_t counter = 0;
-//    printf("\n------------------------------------start-----------------------------------\n");
-//
-//    while (hasNext(iterator, file)) {
-//        printf("id: %d ", counter);
-//        counter++;
-//        EntityRecord *entityRecord1 = next(iterator, file);
-//        printEntityRecord(entityRecord1, 5, nameTypeBlocks);
-//    }
-//    printf("\n------------------------------------finish-----------------------------------\n");
-//    printf("\n counter: %d", counter);
-//    fclose(file);
+    deleteRecordFromTable(file, "Users", &predicate, 1);
 
 //    Iterator *iterator = readEntityRecordWithCondition(file, "Users", NULL, 0);
+//    NameTypeBlock *nameTypeBlocks = buildNameTypeBlock();
 //    while (hasNext(iterator, file)) {
-//        EntityRecord *entityRecord1 = next(iterator, file);
-//        printEntityRecord(entityRecord1, 5, nameTypeBlocks);
+//        EntityRecord *entityRecord = next(iterator, file);
+//        printEntityRecord(entityRecord, 5, nameTypeBlocks);
+//        free(entityRecord);
 //    }
+//    free(nameTypeBlocks);
+//    freeIterator(iterator);
+    fclose(file);
+    return elapsed_time;
+}

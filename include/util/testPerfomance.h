@@ -10,18 +10,25 @@
 
 
 #ifdef _WIN32
-#define FILE_NAME "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\file.bin"
-#define FILE_NAME_1 "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\testInsert.bin"
-#define FILE_NAME_2 "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\data.bin"
+#define FILE_INSERT_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\insert_performance_data.txt"
+#define FILE_UPDATE_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\update_performance_data.txt"
+#define FILE_DELETE_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\delete_performance_data.txt"
 #else
-#define FILE_NAME "/home/iwaa0303/CLionProjects/lab1/test/file.bin"
-#define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"
-#define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
+#define FILE_INSERT_DATA "/home/iwaa0303/CLionProjects/database/src/util/insert_performance_data.txt"
+#define FILE_UPDATE_DATA "/home/iwaa0303/CLionProjects/database/src/util/update_performance_data.txt"
+#define FILE_DELETE_DATA "/home/iwaa0303/CLionProjects/database/src/util/delete_performance_data.txt"
+#define FILE_DELETE_INSERT "/home/iwaa0303/CLionProjects/database/src/util/delete_insert_performance.txt"
 #endif
 void testInsertPerformance(int64_t amountData);
 
 void testUpdatePerformance(void );
 
 void testDeletePerformance(void );
+
+double testDeleteInsertPerformance(int64_t insertAmount, int32_t deleteAmount);
+
+NameTypeBlock *buildNameTypeBlock(void );
+
+EntityRecord *buildEntityRecord(void );
 
 #endif //LLP_TESTPERFOMANCE_H

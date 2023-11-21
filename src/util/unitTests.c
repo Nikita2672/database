@@ -1,5 +1,5 @@
 #include "../../include/util/unitTests.h"
-
+#include "../../include/util/testPerfomance.h"
 
 #define BLOCK_SPACE (sizeof (HeaderSection) + BLOCK_DATA_SIZE + sizeof (SpecialDataSection))
 
@@ -130,7 +130,8 @@ void test3(void) {
     insertRecord(file, &entityRecord, &tableOffsetBlock);
     EntityRecord *entityRecord1 = readRecord(file, 0, 0, 4);
     assertEquals(*(double *) entityRecord1->fields[0].data, 1234.4, "value1", 3, 2);
-    assertEqualsString(cutString(entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Nikita", "value2", 3, 4);
+    assertEqualsString(cutString(entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Nikita",
+                       "value2", 3, 4);
     assertEquals(*(bool *) entityRecord1->fields[2].data, 1, "value3", 3, 6);
     assertEquals(*(int32_t *) entityRecord1->fields[3].data, 20, "value4", 3, 8);
     //------------------------------------------------------------------------------------------------------------------------
@@ -150,7 +151,8 @@ void test3(void) {
     insertRecord(file, &entityRecord2, &tableOffsetBlock);
     EntityRecord *entityRecord12 = readRecord(file, 0, 0, 4);
     assertEquals(*(double *) entityRecord12->fields[0].data, 1234.4, "value1", 3, 10);
-    assertEqualsString(cutString(entityRecord12->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Nikita", "value2", 3, 12);
+    assertEqualsString(cutString(entityRecord12->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Nikita",
+                       "value2", 3, 12);
     assertEquals(*(bool *) entityRecord12->fields[2].data, 1, "value3", 3, 14);
     assertEquals(*(int32_t *) entityRecord12->fields[3].data, 20, "value4", 3, 16);
     EntityRecord *entityRecord22 = readRecord(file, 1, 0, 4);
@@ -710,7 +712,8 @@ void test10(void) {
     assertEqualsString(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize),
                        "QuantumTeam",
                        "Name", 10, 12);
-    assertEqualsString(cutString((char *) entityRecord->fields[6].data, 0, entityRecord->fields[6].dataSize), "Command develop loyality module", "Description", 10, 13);
+    assertEqualsString(cutString((char *) entityRecord->fields[6].data, 0, entityRecord->fields[6].dataSize),
+                       "Command develop loyality module", "Description", 10, 13);
 
     entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
     assertEqualsString(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Boris",
@@ -766,7 +769,6 @@ void test11(void) {
     assertEquals(readEmptySpaceOffset(file), offset + (BLOCK_SPACE) * (tablesToInsert - 1), "offset", 11, 4);
     offset = readEmptySpaceOffset(file);
     cutFile(file, offset + 1);
-    printf("\nfileSize: %llu", getFileSize(file));
     fclose(file);
 }
 
@@ -827,4 +829,50 @@ void test12(void) {
         free(entityRecordCompound);
         free(entities);
     }
+}
+
+// check Meta table
+void test13(void) {
+    testInsertPerformance(1000);
+    FILE *file = fopen(FILE_NAME, "rb+");
+    Iterator *iterator = readEntityRecordWithCondition(file, "Users", NULL, 0);
+    NameTypeBlock *nameTypeBlocks = buildNameTypeBlock();
+    while (hasNext(iterator, file)) {
+        EntityRecord *entityRecord = next(iterator, file);
+        printEntityRecord(entityRecord, 5, nameTypeBlocks);
+        freeEntityRecord(entityRecord, 5);
+    }
+    freeIterator(iterator);
+
+
+    int32_t age = 216;
+    FieldValue fieldValue = {&age, sizeof (int32_t)};
+    Predicate predicate = {&fieldValue, "Age", LESS_OR_EQUALS};
+    deleteRecordFromTable(file, "Users", &predicate, 1);
+
+    printMetaTableRecords(file);
+    EntityRecord *entityRecord1 = buildEntityRecord();
+    int32_t amountData = 1000;
+    for (int32_t i = 0; i < amountData; i++) {
+        int32_t *newData = malloc(sizeof(int32_t));
+        *newData = i;
+        entityRecord1->fields[2].data = newData;
+        insertRecordIntoTable(file, entityRecord1, "Users");
+        if (i < amountData - 1) {
+            free(newData);
+        }
+    }
+    deleteRecordFromTable(file, "Users", &predicate, 1);
+    freeEntityRecord(entityRecord1, 5);
+    printf("\n");
+    printMetaTableRecords(file);
+    Iterator *iterator1 = readEntityRecordWithCondition(file, "Users", NULL, 0);
+    while (hasNext(iterator1, file)) {
+        EntityRecord *entityRecord = next(iterator1, file);
+        printEntityRecord(entityRecord, 5, nameTypeBlocks);
+        freeEntityRecord(entityRecord, 5);
+    }
+    freeIterator(iterator);
+
+    fclose(file);
 }

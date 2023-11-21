@@ -7,13 +7,14 @@
 #include "../../include/query/query.h"
 #include "../../include/file/fileApi.h"
 #include "../../include/file/iterator.h"
+#include "util/util.h"
 #include <inttypes.h>
 
 
 #define BLOCK_SIZE sizeof( HeaderSection) + BLOCK_DATA_SIZE + sizeof( SpecialDataSection)
 // Размер буфера для того чтобы поместилось число типа uint64_t как строка 20-знаков + нуль терминатор
 #define BUFFER_SIZE 21
-#define NORMAL_SPACE 200
+#define NORMAL_SPACE 8192
 
 void writeEmptyTablesBlock(FILE *file) {
     DefineTablesBlock *data = malloc(sizeof(DefineTablesBlock));
@@ -105,6 +106,36 @@ uint64_t findOffsetForTableOffsetBlock(FILE *file) {
     free(tableOffsetBlock);
     free(buffer);
     return 0;
+}
+
+static void writeLastBlockOffset(FILE* file, char *tableName, uint64_t lastOffset) {
+    TableOffsetBlock *tableOffsetBlock = malloc(sizeof(TableOffsetBlock));
+    fseek(file, sizeof(uint32_t), SEEK_SET);
+    for (uint16_t i = 0; i < MAX_TABLES; i++) {
+        fread(tableOffsetBlock, sizeof(TableOffsetBlock), 1, file);
+        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
+            tableOffsetBlock->lastTableBLockOffset = lastOffset;
+            fseek(file, -sizeof (TableOffsetBlock), SEEK_CUR);
+            fwrite(tableOffsetBlock, sizeof (TableOffsetBlock), 1, file);
+            break;
+        }
+    }
+    free(tableOffsetBlock);
+}
+
+static void writeFirstBlockOffset(FILE* file, char *tableName, uint64_t firstOffset) {
+    TableOffsetBlock *tableOffsetBlock = malloc(sizeof(TableOffsetBlock));
+    fseek(file, sizeof(uint32_t), SEEK_SET);
+    for (uint16_t i = 0; i < MAX_TABLES; i++) {
+        fread(tableOffsetBlock, sizeof(TableOffsetBlock), 1, file);
+        if (strcmp(tableOffsetBlock->tableName, tableName) == 0) {
+            tableOffsetBlock->firsTableBlockOffset = firstOffset;
+            fseek(file, -sizeof (TableOffsetBlock), SEEK_CUR);
+            fwrite(tableOffsetBlock, sizeof (TableOffsetBlock), 1, file);
+            break;
+        }
+    }
+    free(tableOffsetBlock);
 }
 
 
@@ -376,7 +407,7 @@ void rebuildArrayOfRecordIds(unsigned char *buffer, RecordId *recordIdArray, uin
     reverseDataArray(recordIdArray, (recordsNumber - 1));
 }
 
-static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer) {
+static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer, char *tableName) {
     HeaderSection headerSection;
     SpecialDataSection specialDataSection;
     RecordId recordId;
@@ -389,34 +420,94 @@ static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer) 
                       sizeof(RecordId) * iterator->currentPositionInBlock, sizeof(RecordId));
     LinkNext *linkNext = malloc(sizeof(LinkNext));
     memcpy(linkNext, buffer + sizeof(HeaderSection) + recordId.offset, sizeof(LinkNext));
-    if (linkNext->blockOffset == 0) {
-        uint32_t bufferBeforeSize = recordId.offset;
-        unsigned char *bufferBefore = malloc(bufferBeforeSize);
-        memcpy(bufferBefore, buffer + sizeof(HeaderSection), recordId.offset);
-        RecordId *recordIdArray = malloc(sizeof(RecordId) * (headerSection.recordsNumber - 1));
-        rebuildArrayOfRecordIds(buffer, recordIdArray, headerSection.recordsNumber, iterator->currentPositionInBlock,
-                                recordId.length);
-        uint32_t bufferAfterSize = headerSection.endEmptySpaceOffset - (recordId.offset + recordId.length);
-        uint32_t bufferAfterStartOffset = sizeof(HeaderSection) + recordId.offset + recordId.length;
-        unsigned char *bufferAfter = malloc(bufferAfterSize);
-        memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
-        headerSection.recordsNumber--;
-        headerSection.startEmptySpaceOffset -= recordId.length;
-        headerSection.endEmptySpaceOffset += sizeof(RecordId);
-        fseek(file, iterator->blockOffset, SEEK_SET);
-        fwrite(&headerSection, sizeof(HeaderSection), 1, file);
-        fwrite(bufferBefore, bufferBeforeSize, 1, file);
-        fwrite(bufferAfter, bufferAfterSize, 1, file);
-        uint32_t recordIdsOffset = iterator->blockOffset + sizeof(HeaderSection) + BLOCK_DATA_SIZE -
-                                   sizeof(RecordId) * headerSection.recordsNumber;
-        fseek(file, recordIdsOffset, SEEK_SET);
-        fwrite(recordIdArray, sizeof(RecordId) * headerSection.recordsNumber, 1, file);
-        fflush(file);
-        free(bufferBefore);
-        free(bufferAfter);
-        free(recordIdArray);
-    } else {
+    uint32_t bufferBeforeSize = recordId.offset;
+    unsigned char *bufferBefore = malloc(bufferBeforeSize);
+    memcpy(bufferBefore, buffer + sizeof(HeaderSection), recordId.offset);
+    RecordId *recordIdArray = malloc(sizeof(RecordId) * (headerSection.recordsNumber - 1));
+    rebuildArrayOfRecordIds(buffer, recordIdArray, headerSection.recordsNumber, iterator->currentPositionInBlock,
+                            recordId.length);
+    uint32_t bufferAfterSize = headerSection.endEmptySpaceOffset - (recordId.offset + recordId.length);
+    uint32_t bufferAfterStartOffset = sizeof(HeaderSection) + recordId.offset + recordId.length;
+    unsigned char *bufferAfter = malloc(bufferAfterSize);
+    memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
+    headerSection.recordsNumber--;
+    if (headerSection.recordsNumber <= 0) {
+        uint64_t offset = iterator->blockOffset;
+        char *CharBuffer = malloc(sizeof (char ) * BUFFER_SIZE);
+        snprintf(CharBuffer, sizeof(char) * BUFFER_SIZE, "%" PRIu64, offset);
+        FieldValue fieldValue;
+        EntityRecord entityRecord;
+        fieldValue.data = CharBuffer;
+        fieldValue.dataSize = sizeof(char) * BUFFER_SIZE;
+        entityRecord.fields = &fieldValue;
+        entityRecord.linkNext = NULL;
+        insertRecordIntoTable(file, &entityRecord, "Meta");
+        if (specialDataSection.previousBlockOffset != 0 && specialDataSection.nextBlockOffset == 0) {
+            fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            SpecialDataSection specialDataSection1;
+            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            specialDataSection1.nextBlockOffset = 0;
+            fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            writeLastBlockOffset(file, tableName, specialDataSection.previousBlockOffset);
+            fflush(file);
+            free(bufferBefore);
+            free(bufferAfter);
+            free(recordIdArray);
+            return;
+        }
+        if (specialDataSection.previousBlockOffset != 0 && specialDataSection.nextBlockOffset != 0) {
+            fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            SpecialDataSection specialDataSection1;
+            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            specialDataSection1.nextBlockOffset = specialDataSection.nextBlockOffset;
+            fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+
+            fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            specialDataSection1.previousBlockOffset = specialDataSection.previousBlockOffset;
+            fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            iterator->blockOffset = specialDataSection.nextBlockOffset;
+            iterator->currentPositionInBlock = 1;
+            fflush(file);
+            free(bufferBefore);
+            free(bufferAfter);
+            free(recordIdArray);
+            return;
+        }
+        if (specialDataSection.previousBlockOffset == 0 && specialDataSection.nextBlockOffset != 0) {
+            writeFirstBlockOffset(file, tableName, specialDataSection.nextBlockOffset);
+            SpecialDataSection  specialDataSection1;
+            fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            specialDataSection1.previousBlockOffset = 0;
+            fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            iterator->blockOffset = specialDataSection.nextBlockOffset;
+            iterator->currentPositionInBlock = 1;
+            fflush(file);
+            free(bufferBefore);
+            free(bufferAfter);
+            free(recordIdArray);
+            return;
+        }
     }
+    headerSection.startEmptySpaceOffset -= recordId.length;
+    headerSection.endEmptySpaceOffset += sizeof(RecordId);
+    fseek(file, iterator->blockOffset, SEEK_SET);
+    fwrite(&headerSection, sizeof(HeaderSection), 1, file);
+    fwrite(bufferBefore, bufferBeforeSize, 1, file);
+    fwrite(bufferAfter, bufferAfterSize, 1, file);
+    uint32_t recordIdsOffset = iterator->blockOffset + sizeof(HeaderSection) + BLOCK_DATA_SIZE -
+                               sizeof(RecordId) * headerSection.recordsNumber;
+    fseek(file, recordIdsOffset, SEEK_SET);
+    fwrite(recordIdArray, sizeof(RecordId) * headerSection.recordsNumber, 1, file);
+    fflush(file);
+    free(bufferBefore);
+    free(bufferAfter);
+    free(recordIdArray);
 }
 
 
@@ -424,8 +515,10 @@ void deleteRecordFromTable(FILE *file, const char *tableName, Predicate *predica
                            uint8_t predicateNumber) {
     Iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
     unsigned char *buffer = malloc(BLOCK_SIZE);
+    uint16_t counter = 0;
     while (hasNext(iterator, file)) {
-        deleteRecord(file, iterator, buffer);
+        deleteRecord(file, iterator, buffer, tableName);
+        counter++;
         iterator->currentPositionInBlock -= 1;
     }
     free(buffer);
@@ -436,7 +529,7 @@ void updateRecordsFromTable(FILE *file, const char *tableName, Predicate *predic
     Iterator *iterator = readEntityRecordWithCondition(file, tableName, predicate, predicateNumber);
     unsigned char *buffer = malloc(BLOCK_SIZE);
     while (hasNext(iterator, file)) {
-        deleteRecord(file, iterator, buffer);
+        deleteRecord(file, iterator, buffer, tableName);
         iterator->currentPositionInBlock -= 1;
         insertRecordIntoTable(file, entityRecord, tableName);
     }
