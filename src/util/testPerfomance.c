@@ -162,16 +162,6 @@ double testDeleteInsertPerformance(int64_t insertAmount, int32_t deleteAmount) {
     Predicate predicate = {&fieldValue, "Age", LESS_OR_EQUALS};
 
     deleteRecordFromTable(file, "Users", &predicate, 1);
-
-//    Iterator *iterator = readEntityRecordWithCondition(file, "Users", NULL, 0);
-//    NameTypeBlock *nameTypeBlocks = buildNameTypeBlock();
-//    while (hasNext(iterator, file)) {
-//        EntityRecord *entityRecord = next(iterator, file);
-//        printEntityRecord(entityRecord, 5, nameTypeBlocks);
-//        free(entityRecord);
-//    }
-//    free(nameTypeBlocks);
-//    freeIterator(iterator);
     fclose(file);
     return elapsed_time;
 }

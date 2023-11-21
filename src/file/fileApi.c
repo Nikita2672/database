@@ -14,7 +14,7 @@
 #define BLOCK_SIZE sizeof( HeaderSection) + BLOCK_DATA_SIZE + sizeof( SpecialDataSection)
 // Размер буфера для того чтобы поместилось число типа uint64_t как строка 20-знаков + нуль терминатор
 #define BUFFER_SIZE 21
-#define NORMAL_SPACE 8192
+#define NORMAL_SPACE 200
 
 void writeEmptyTablesBlock(FILE *file) {
     DefineTablesBlock *data = malloc(sizeof(DefineTablesBlock));
