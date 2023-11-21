@@ -6,7 +6,7 @@
 static void
 assertEquals(const long double found, const double expected, char *fieldName, uint8_t testNumber, uint8_t position) {
     if (found != expected)
-        printf("%u.%u: %s don't equals, expected %f, but found %f\n",
+        printf("%u.%u: %s don't equals, expected %f, but found %Lf\n",
                testNumber, position, fieldName, expected, found);
 }
 
@@ -130,7 +130,7 @@ void test3(void) {
     insertRecord(file, &entityRecord, &tableOffsetBlock);
     EntityRecord *entityRecord1 = readRecord(file, 0, 0, 4);
     assertEquals(*(double *) entityRecord1->fields[0].data, 1234.4, "value1", 3, 2);
-    assertEqualsString(entityRecord1->fields[1].data, "Nikita", "value2", 3, 4);
+    assertEqualsString(cutString(entityRecord1->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Nikita", "value2", 3, 4);
     assertEquals(*(bool *) entityRecord1->fields[2].data, 1, "value3", 3, 6);
     assertEquals(*(int32_t *) entityRecord1->fields[3].data, 20, "value4", 3, 8);
     //------------------------------------------------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ void test3(void) {
     insertRecord(file, &entityRecord2, &tableOffsetBlock);
     EntityRecord *entityRecord12 = readRecord(file, 0, 0, 4);
     assertEquals(*(double *) entityRecord12->fields[0].data, 1234.4, "value1", 3, 10);
-    assertEqualsString(entityRecord12->fields[1].data, "Nikita", "value2", 3, 12);
+    assertEqualsString(cutString(entityRecord12->fields[1].data, 0, entityRecord1->fields[1].dataSize), "Nikita", "value2", 3, 12);
     assertEquals(*(bool *) entityRecord12->fields[2].data, 1, "value3", 3, 14);
     assertEquals(*(int32_t *) entityRecord12->fields[3].data, 20, "value4", 3, 16);
     EntityRecord *entityRecord22 = readRecord(file, 1, 0, 4);
@@ -710,7 +710,7 @@ void test10(void) {
     assertEqualsString(cutString((char *) entityRecord->fields[5].data, 0, entityRecord->fields[5].dataSize),
                        "QuantumTeam",
                        "Name", 10, 12);
-    assertEqualsString((char *) entityRecord->fields[6].data, "Command develop loyality module", "Description", 10, 13);
+    assertEqualsString(cutString((char *) entityRecord->fields[6].data, 0, entityRecord->fields[6].dataSize), "Command develop loyality module", "Description", 10, 13);
 
     entityRecord = nextWithJoin(joinIterator, "Department", file, 3, "DepartmentId");
     assertEqualsString(cutString((char *) entityRecord->fields[0].data, 0, entityRecord->fields[0].dataSize), "Boris",
@@ -766,7 +766,7 @@ void test11(void) {
     assertEquals(readEmptySpaceOffset(file), offset + (BLOCK_SPACE) * (tablesToInsert - 1), "offset", 11, 4);
     offset = readEmptySpaceOffset(file);
     cutFile(file, offset + 1);
-    printf("\nfileSize: %lu", getFileSize(file));
+    printf("\nfileSize: %llu", getFileSize(file));
     fclose(file);
 }
 
@@ -828,69 +828,3 @@ void test12(void) {
         free(entities);
     }
 }
-
-// test reading and writing entities which are separated
-void test13(void) {
-    FILE *file = fopen(FILE_NAME_1, "rb+");
-    cutFile(file, 0);
-    int size = 4000;
-    char *dynamicString = malloc((size * 5 + 1) * sizeof(char));
-    int index = 0;
-    for (int i = 1000; i < (size + 1000); i += 2) {
-        dynamicString[index++] = '0' + (i / 1000);  // добавляем тысячи
-        dynamicString[index++] = '0' + (i / 100 % 10);  // добавляем сотни
-        dynamicString[index++] = '0' + (i / 10 % 10);  // добавляем десятки
-        dynamicString[index++] = '0' + (i % 10);  // добавляем единицы
-        dynamicString[index++] = '_';
-    }
-    dynamicString[size * 5] = '\0';
-
-    // test read write 1 record with big string
-    HeaderSection headerSection = {0, 0, BLOCK_DATA_SIZE, 0};
-    FieldValue fieldValue1 = {dynamicString, sizeof(char) * strlen(dynamicString)};
-    FieldValue *array = malloc(sizeof(FieldValue));
-    EntityRecord *entityRecord = malloc(sizeof(EntityRecord));
-    *array = fieldValue1;
-    entityRecord->fields = array;
-    writeEmptyTablesBlock(file);
-    NameTypeBlock nameTypeBlock1 = {"name", STRING};
-    uint64_t offset1 = readEmptySpaceOffset(file);
-    TableOffsetBlock tableOffsetBlock = {true, "Users",
-                                         {nameTypeBlock1}, 1, offset1,
-                                         offset1};
-    fseek(file, offset1, SEEK_SET);
-    fwrite(&headerSection, sizeof(HeaderSection), 1, file);
-    writeEmptySpaceOffset(file, readEmptySpaceOffset(file) +
-                                (sizeof(HeaderSection) + BLOCK_DATA_SIZE + sizeof(SpecialDataSection)));
-    insertRecord(file, entityRecord, &tableOffsetBlock);
-
-    fseek(file, offset1, SEEK_SET);
-    HeaderSection *headerSectionRead = malloc(sizeof(HeaderSection));
-    fread(headerSectionRead, sizeof(HeaderSection), 1, file);
-    printf("\n1.Records Number: %hhu\n", headerSectionRead->recordsNumber);
-    printf("\n1.Page Number: %hu\n", headerSectionRead->pageNumber);
-    printf("\n1.EndEmptySpaceOffset %hu\n", headerSectionRead->endEmptySpaceOffset);
-    printf("\n1.StartEmptySpaceOffset: %hu\n", headerSectionRead->startEmptySpaceOffset);
-
-
-    fseek(file, offset1 + (sizeof(HeaderSection) + BLOCK_DATA_SIZE + sizeof(SpecialDataSection)),
-          SEEK_SET);
-    HeaderSection *headerSectionRead2 = malloc(sizeof(HeaderSection));
-    fread(headerSectionRead2, sizeof(HeaderSection), 1, file);
-    printf("\n2.Records Number: %hhu\n", headerSectionRead2->recordsNumber);
-    printf("\n2.Page Number: %hu\n", headerSectionRead2->pageNumber);
-    printf("\n2.EndEmptySpaceOffset %hu\n", headerSectionRead2->endEmptySpaceOffset);
-    printf("\n2.StartEmptySpaceOffset: %hu\n", headerSectionRead2->startEmptySpaceOffset);
-
-    EntityRecord *entityRecordRead = readRecord(file, 0, offset1 +
-                                                         (sizeof(HeaderSection) + BLOCK_DATA_SIZE +
-                                                          sizeof(SpecialDataSection)), 1);
-    printf("\n%lu", entityRecordRead->fields[0].dataSize);
-//    printf("\n%s", cutString((char *) entityRecordRead->fields[0].data, 0, entityRecord->fields[0].dataSize));
-    printf("\n%s\n", dynamicString);
-    free(headerSectionRead);
-    free(headerSectionRead2);
-    free(dynamicString);
-    fclose(file);
-}
-

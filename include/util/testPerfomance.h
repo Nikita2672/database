@@ -18,7 +18,7 @@
 #define FILE_NAME_1 "/home/iwaa0303/CLionProjects/lab1/testInsert.bin"
 #define FILE_NAME_2 "/home/iwaa0303/CLionProjects/lab1/test/data.bin"
 #endif
-void testInsertPerformance(uint32_t amountData);
+void testInsertPerformance(int64_t amountData);
 
 void testUpdatePerformance(void );
 

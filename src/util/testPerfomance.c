@@ -15,7 +15,7 @@
 #endif
 
 
-void testInsertPerformance(uint32_t amountData) {
+void testInsertPerformance(int64_t amountData) {
     FILE *fileData = fopen(FILE_INSERT_DATA, "r+");
     struct timeval start, end;
     double elapsed_time;

@@ -43,8 +43,6 @@ void test11(void);
 
 void test12(void);
 
-void test13(void);
-
 void testInsert(void );
 
 #endif //LAB1_TESTS_H

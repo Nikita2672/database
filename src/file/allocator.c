@@ -28,7 +28,7 @@ uint64_t allocateBlock(FILE *file, uint64_t previousOffset, uint64_t pageNumber)
                 emptySpaceOffset + (sizeof(HeaderSection) + BLOCK_DATA_SIZE + sizeof(SpecialDataSection));
         fseek(file, sizeof(DefineTablesBlock) - sizeof(uint64_t), SEEK_SET);
         fwrite(&resultOffset, sizeof(uint64_t), 1, file);
-        printf("\nEmptySpace offset: %lu\n", resultOffset);
+        printf("\nEmptySpace offset: %llu\n", resultOffset);
     }
     uint64_t resultOffset = emptySpaceOffset;
     fseek(file, emptySpaceOffset, SEEK_SET);
