@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <stdio.h>
 #include "../../include/query/query.h"
 #include "../../include/data/comparator.h"
@@ -28,25 +27,4 @@ bool checkPredicate(Predicate *predicate, EntityRecord *entityRecord, uint16_t f
     }
     printf("there is no %s field in table\n", predicate->fieldName);
     return false;
-}
-
-void freePredicate(Predicate *predicate) {
-    if (predicate != NULL) {
-        free(predicate->fieldName);
-        free(predicate->comparableValue->data);
-        free(predicate);
-    }
-}
-
-void freeQuery(Query *query) {
-    if (query != NULL) {
-        if (query->predicates != NULL) {
-            for (uint32_t i = 0; i < query->predicatesNumber; i++) {
-                freePredicate(&(query->predicates[i]));
-            }
-            free(query->predicates);
-        }
-        free(query->tableName);
-        free(query);
-    }
 }

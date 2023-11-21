@@ -20,16 +20,6 @@ typedef struct {
     enum Compare comparator;
 } Predicate;
 
-typedef struct {
-    Predicate *predicates;
-    uint32_t predicatesNumber;
-    char *tableName;
-} Query;
-
-void freePredicate(Predicate *predicate);
-
-void freeQuery(Query *query);
-
 bool
 checkPredicate(Predicate *predicate, EntityRecord *entityRecord, uint16_t fieldsNumber, NameTypeBlock *nameTypeBlock);
 
