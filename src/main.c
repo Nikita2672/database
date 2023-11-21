@@ -15,6 +15,7 @@ static void unitTest(void ) {
     test10();
     test11();
     test12();
+    test13();
 }
 
 static void performanceTest(void ) {
@@ -25,7 +26,13 @@ static void performanceTest(void ) {
 
 int main(void) {
     unitTest();
-//    performanceTest();
-//    testInsertPerformance(1000000);
+    performanceTest();
+    testInsertPerformance(1);
+    FILE *fileData = fopen(FILE_DELETE_INSERT, "r+");
+    for (uint16_t i = 0; i < 400; i++) {
+        double elapsed_time = testDeleteInsertPerformance(200, 100);
+        fprintf(fileData, "%d, %f\n", i + 1, elapsed_time);
+    }
+    fclose(fileData);
     return 0;
 }
