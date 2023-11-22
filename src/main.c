@@ -2,7 +2,7 @@
 #include "../include/util/unitTests.h"
 #include "../include/util/testPerfomance.h"
 
-static void unitTest(void ) {
+static void unitTest(void) {
     test1();
     test2();
     test3();
@@ -18,21 +18,27 @@ static void unitTest(void ) {
     test13();
 }
 
-static void performanceTest(void ) {
+static void performanceTest(void) {
     testInsertPerformance(1000);
     testUpdatePerformance();
     testDeletePerformance();
 }
 
 int main(void) {
-    unitTest();
-    performanceTest();
-    testInsertPerformance(1);
-    FILE *fileData = fopen(FILE_DELETE_INSERT, "r+");
-    for (uint16_t i = 0; i < 400; i++) {
-        double elapsed_time = testDeleteInsertPerformance(200, 100);
-        fprintf(fileData, "%d, %f\n", i + 1, elapsed_time);
+//    unitTest();
+//    performanceTest();
+    testInsertPerformance(0);
+    FILE *fileDataInsert = fopen(FILE_INSERT, "r+");
+    FILE *fileDataDelete = fopen(FILE_DELETE, "r+");
+    for (uint16_t i = 0; i < 100; i++) {
+        testDeleteInsertPerformance(500, 400, i, fileDataInsert, fileDataDelete);
     }
-    fclose(fileData);
+    fclose(fileDataInsert);
+    fclose(fileDataDelete);
+
+//    FILE *file = fopen(FILE_NAME, "rb+");
+//    printMetaTableRecords(file);
+//    fclose(file);
+
     return 0;
 }
