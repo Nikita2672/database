@@ -432,6 +432,22 @@ static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer, 
     memcpy(bufferAfter, buffer + bufferAfterStartOffset, bufferAfterSize);
     headerSection.recordsNumber--;
     if (headerSection.recordsNumber <= 0) {
+        if (specialDataSection.previousBlockOffset == 0 && specialDataSection.nextBlockOffset != 0) {
+            writeFirstBlockOffset(file, tableName, specialDataSection.nextBlockOffset);
+            SpecialDataSection  nextSpecialDataSection;
+            fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fread(&nextSpecialDataSection, sizeof (SpecialDataSection), 1, file);
+            nextSpecialDataSection.previousBlockOffset = 0;
+            fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+            fwrite(&nextSpecialDataSection, sizeof (SpecialDataSection), 1, file);
+            iterator->blockOffset = specialDataSection.nextBlockOffset;
+            iterator->currentPositionInBlock = 1;
+            fflush(file);
+            free(bufferBefore);
+            free(bufferAfter);
+            free(recordIdArray);
+            return;
+        }
         uint64_t offset = iterator->blockOffset;
         char *CharBuffer = malloc(sizeof (char ) * BUFFER_SIZE);
         snprintf(CharBuffer, sizeof(char) * BUFFER_SIZE, "%" PRIu64, offset);
@@ -444,11 +460,11 @@ static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer, 
         insertRecordIntoTable(file, &entityRecord, "Meta");
         if (specialDataSection.previousBlockOffset != 0 && specialDataSection.nextBlockOffset == 0) {
             fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            SpecialDataSection specialDataSection1;
-            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
-            specialDataSection1.nextBlockOffset = 0;
+            SpecialDataSection previousSpecialDataSection;
+            fread(&previousSpecialDataSection, sizeof (SpecialDataSection), 1, file);
+            previousSpecialDataSection.nextBlockOffset = 0;
             fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            fwrite(&previousSpecialDataSection, sizeof (SpecialDataSection), 1, file);
             writeLastBlockOffset(file, tableName, specialDataSection.previousBlockOffset);
             fflush(file);
             free(bufferBefore);
@@ -457,34 +473,22 @@ static void deleteRecord(FILE *file, Iterator *iterator, unsigned char *buffer, 
             return;
         }
         if (specialDataSection.previousBlockOffset != 0 && specialDataSection.nextBlockOffset != 0) {
+            // change previous specialDataSection
             fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            SpecialDataSection specialDataSection1;
-            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
-            specialDataSection1.nextBlockOffset = specialDataSection.nextBlockOffset;
+            SpecialDataSection previousSpecialDataSection;
+            fread(&previousSpecialDataSection, sizeof (SpecialDataSection), 1, file);
+            previousSpecialDataSection.nextBlockOffset = specialDataSection.nextBlockOffset;
             fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            fwrite(&previousSpecialDataSection, sizeof (SpecialDataSection), 1, file);
 
+            //change next specialDataSection
+            SpecialDataSection nextSpecialDataSection;
             fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
-            specialDataSection1.previousBlockOffset = specialDataSection.previousBlockOffset;
-            fseek(file, specialDataSection.previousBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
-            iterator->blockOffset = specialDataSection.nextBlockOffset;
-            iterator->currentPositionInBlock = 1;
-            fflush(file);
-            free(bufferBefore);
-            free(bufferAfter);
-            free(recordIdArray);
-            return;
-        }
-        if (specialDataSection.previousBlockOffset == 0 && specialDataSection.nextBlockOffset != 0) {
-            writeFirstBlockOffset(file, tableName, specialDataSection.nextBlockOffset);
-            SpecialDataSection  specialDataSection1;
+            fread(&nextSpecialDataSection, sizeof (SpecialDataSection), 1, file);
+            nextSpecialDataSection.previousBlockOffset = specialDataSection.previousBlockOffset;
             fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            fread(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
-            specialDataSection1.previousBlockOffset = 0;
-            fseek(file, specialDataSection.nextBlockOffset + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
-            fwrite(&specialDataSection1, sizeof (SpecialDataSection), 1, file);
+            fwrite(&nextSpecialDataSection, sizeof (SpecialDataSection), 1, file);
+
             iterator->blockOffset = specialDataSection.nextBlockOffset;
             iterator->currentPositionInBlock = 1;
             fflush(file);
@@ -695,4 +699,18 @@ EntityRecord *compoundEntityRecords(EntityRecord *entityRecord1, EntityRecord *e
     free(entityRecord2);
 
     return entityRecord;
+}
+
+void printOffsetLink(FILE* file, char *tableName) {
+    TableOffsetBlock *tableOffsetBlock = findTableOffsetBlock(file, tableName);
+    uint64_t start = tableOffsetBlock->firsTableBlockOffset;
+    SpecialDataSection specialDataSection;
+    printf("-+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_++_+_+_+\n");
+    while (start) {
+        fseek(file, start + sizeof (HeaderSection) + BLOCK_DATA_SIZE, SEEK_SET);
+        fread(&specialDataSection, sizeof (SpecialDataSection), 1, file);
+        printf("previous offset: %lu; current offset: %lu; next offset: %lu\n", specialDataSection.previousBlockOffset, start, specialDataSection.nextBlockOffset);
+        start = specialDataSection.nextBlockOffset;
+    }
+    printf("-+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_++_+_+_+\n");
 }

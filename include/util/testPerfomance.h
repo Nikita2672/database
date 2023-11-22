@@ -18,7 +18,8 @@
 #define FILE_INSERT_DATA "/home/iwaa0303/CLionProjects/database/src/util/insert_performance_data.txt"
 #define FILE_UPDATE_DATA "/home/iwaa0303/CLionProjects/database/src/util/update_performance_data.txt"
 #define FILE_DELETE_DATA "/home/iwaa0303/CLionProjects/database/src/util/delete_performance_data.txt"
-#define FILE_DELETE_INSERT "/home/iwaa0303/CLionProjects/database/src/util/delete_insert_performance.txt"
+#define FILE_DELETE "/home/iwaa0303/CLionProjects/database/src/util/delete_insert_performance.txt"
+#define FILE_INSERT "/home/iwaa0303/CLionProjects/database/src/util/insert_delete_performance.txt"
 #endif
 void testInsertPerformance(int64_t amountData);
 
@@ -26,7 +27,7 @@ void testUpdatePerformance(void );
 
 void testDeletePerformance(void );
 
-double testDeleteInsertPerformance(int64_t insertAmount, int32_t deleteAmount);
+double testDeleteInsertPerformance(int64_t insertAmount, int32_t deleteAmount, uint16_t i, FILE* fileDataInsert, FILE* fileDataDelete);
 
 NameTypeBlock *buildNameTypeBlock(void );
 
