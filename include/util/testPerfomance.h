@@ -13,7 +13,8 @@
 #define FILE_INSERT_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\insert_performance_data.txt"
 #define FILE_UPDATE_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\update_performance_data.txt"
 #define FILE_DELETE_DATA "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\delete_performance_data.txt"
-#define FILE_DELETE_INSERT "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\delete_insert_performance.txt"
+#define FILE_DELETE "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\delete_insert_performance.txt"
+#define FILE_INSERT "C:\\Users\\iwaa0\\CLionProjects\\llp\\database\\test\\insert_delete_performance.txt"
 #else
 #define FILE_INSERT_DATA "/home/iwaa0303/CLionProjects/database/src/util/insert_performance_data.txt"
 #define FILE_UPDATE_DATA "/home/iwaa0303/CLionProjects/database/src/util/update_performance_data.txt"
